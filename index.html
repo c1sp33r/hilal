@@ -420,7 +420,7 @@
             }
         }
 
-        /* Nouveau style pour les options de temps */
+        /* Style pour les options de temps */
         .time-options {
             display: flex;
             flex-wrap: wrap;
@@ -504,7 +504,7 @@
             <div class="card">
                 <h2 id="positionTitle">1. Position</h2>
                 <label for="locationSearch" id="searchLabel">Rechercher un lieu :</label>
-                <input type="text" id="locationSearch" placeholder="Ex: La Mecque, Arabie saoudite" autocomplete="off">
+                <input type="text" id="locationSearch" placeholder="Ex: Paris, France" autocomplete="off">
                 <div id="searchResults" class="search-results"></div>
                 <div id="searchLoading" class="search-loading">Recherche en cours...</div>
                 <button class="location-btn" onclick="getUserLocation()" id="locationBtn">📍 Ma Position Actuelle</button>
@@ -646,7 +646,7 @@
                 pageTitle: "Observation du Croissant Lunaire (Hilal)",
                 positionTitle: "1. Position",
                 searchLabel: "Rechercher un lieu :",
-                searchPlaceholder: "Ex: La Mecque, Arabie saoudite",
+                searchPlaceholder: "Ex: Paris, France",
                 locationBtn: "📍 Ma Position Actuelle",
                 locationPlaceholder: "Nom du lieu (sera rempli automatiquement)",
                 latLabel: "Latitude",
@@ -675,6 +675,8 @@
                 sunriseLabel: "Lever :",
                 azimuthLabel: "Azimut :",
                 altitudeLabel: "Altitude :",
+                moonAzimuthLabel: "Azimut (au coucher du soleil) :",
+                moonAltitudeLabel: "Altitude (au coucher du soleil) :",
                 moonsetLabel: "Coucher :",
                 moonriseLabel: "Lever :",
                 visibilityTitle: "Visibilité du Croissant Lunaire",
@@ -716,7 +718,7 @@
                 step3Title: "Consultez les informations",
                 step3Desc: "Analysez les données astronomiques et la visibilité du croissant lunaire.",
                 step4Title: "Visualisez le panorama",
-                step4Desc: "Observez la position de la lune par rapport au relief sur le panorama.",
+                step4Desc: "Mettez à jour le panorama pour visualiser la position de la Lune par rapport au relief.",
                 usageTip: "Pour une observation optimale, choisissez un lieu avec un horizon dégagé vers l'ouest.",
                 latError: "La latitude doit être entre -90° et 90°",
                 lngError: "La longitude doit être entre -180° et 180°",
@@ -727,16 +729,18 @@
                 hours: "heures",
                 day: "jour",
                 days: "jours",
+                hourAbbr: " h",
+                minAbbr: " min",
                 conjunctionTitle: "Conjonction",
-                prevConjunction: "Précédente",
-                nextConjunction: "Suivante",
+                prevConjunction: "Précédent",
+                nextConjunction: "Suivant",
                 durationLabel: "Durée après coucher :"
             },
             en: {
                 pageTitle: "Lunar Crescent Observation (Hilal)",
                 positionTitle: "1. Position",
                 searchLabel: "Search for a place:",
-                searchPlaceholder: "Ex: Makkah, Saudi Arabia",
+                searchPlaceholder: "Ex: Paris, France",
                 locationBtn: "📍 My Current Location",
                 locationPlaceholder: "Place name (will be filled automatically)",
                 latLabel: "Latitude",
@@ -765,6 +769,8 @@
                 sunriseLabel: "Sunrise:",
                 azimuthLabel: "Azimuth:",
                 altitudeLabel: "Altitude:",
+                moonAzimuthLabel: "Azimuth (at sunset):",
+                moonAltitudeLabel: "Altitude (at sunset):",
                 moonsetLabel: "Moonset:",
                 moonriseLabel: "Moonrise:",
                 visibilityTitle: "Lunar Crescent Visibility",
@@ -806,7 +812,7 @@
                 step3Title: "Check the information",
                 step3Desc: "Analyze astronomical data and crescent moon visibility.",
                 step4Title: "View the panorama",
-                step4Desc: "Observe the moon position relative to terrain on the panorama.",
+                step4Desc: "Update the panorama to view the Moon's position relative to the terrain.",
                 usageTip: "For optimal observation, choose a location with clear western horizon.",
                 latError: "Latitude must be between -90° and 90°",
                 lngError: "Longitude must be between -180° and 180°",
@@ -817,6 +823,8 @@
                 hours: "hours",
                 day: "day",
                 days: "days",
+                hourAbbr: " h",
+                minAbbr: " min",
                 conjunctionTitle: "Conjunction",
                 prevConjunction: "Previous",
                 nextConjunction: "Next",
@@ -826,7 +834,7 @@
                 pageTitle: "رصد الهلال",
                 positionTitle: "١. الموقع",
                 searchLabel: "البحث عن مكان:",
-                searchPlaceholder: "مثال: مكة، السعودية",
+                searchPlaceholder: "مثال: باريس، فرنسا",
                 locationBtn: "📍 موقعي الحالي",
                 locationPlaceholder: "اسم المكان (سيتم ملؤه تلقائياً)",
                 latLabel: "خط العرض",
@@ -853,8 +861,10 @@
                 moonTitle: "القمر",
                 sunsetLabel: "غروب الشمس:",
                 sunriseLabel: "شروق الشمس:",
-                azimuthLabel: "السمت:",
-                altitudeLabel: "الارتفاع:",
+                azimuthLabel: "السمت :",
+                altitudeLabel: "الارتفاع :",
+                moonAzimuthLabel: "السمت (عند غروب الشمس) :",
+                moonAltitudeLabel: "الارتفاع (عند غروب الشمس) :",
                 moonsetLabel: "غروب القمر:",
                 moonriseLabel: "شروق القمر:",
                 visibilityTitle: "رؤية الهلال",
@@ -896,7 +906,7 @@
                 step3Title: "راجع المعلومات",
                 step3Desc: "حلل البيانات الفلكية وإمكانية رؤية الهلال.",
                 step4Title: "شاهد البانوراما",
-                step4Desc: "راقب موقع القمر بالنسبة للتضاريس على البانوراما.",
+                step4Desc: "قم بتحديث البانوراما لمشاهدة موقع القمر بالنسبة للتضاريس .",
                 usageTip: "للحصول على أفضل رصد، اختر موقعاً بأفق غربي مكشوف.",
                 latError: "يجب أن يكون خط العرض بين ٩٠° و ٩٠°-",
                 lngError: "يجب أن يكون خط الطول بين ١٨٠° و ١٨٠°-",
@@ -907,6 +917,8 @@
                 hours: "ساعات",
                 day: "يوم",
                 days: "أيام",
+                hourAbbr: " س",
+                minAbbr: " د",
                 conjunctionTitle: "الاقتران",
                 prevConjunction: "السابق",
                 nextConjunction: "القادم",
@@ -1275,15 +1287,16 @@
             }
         }
 
-        // ==================== Fonction pour formater la durée ====================
+        // ==================== Fonction pour formater la durée avec unités traduites ====================
         function formatDuration(minutes) {
             if (minutes < 0) return "0";
             const hours = Math.floor(minutes / 60);
             const mins = Math.floor(minutes % 60);
+            const t = translations[currentLang];
             if (hours > 0) {
-                return `${hours}h ${mins}min`;
+                return `${hours}${t.hourAbbr} ${mins}${t.minAbbr}`;
             } else {
-                return `${mins} min`;
+                return `${mins}${t.minAbbr}`;
             }
         }
 
@@ -1341,8 +1354,9 @@
                     <div class="astro-section moon-section">
                         <div class="astro-header"><div class="moon-icon">🌙</div><h3 style="margin:0;color:#6b7280;">${t.moonTitle}</h3></div>
                         <div class="astro-info-item"><span class="info-label">${t.moonsetLabel}</span><span class="info-value">${mt.set ? formatTime(mt.set, currentLang) : 'N/A'}</span></div>
-                        <div class="astro-info-item"><span class="info-label">${t.azimuthLabel}</span><span class="info-value">${formatNumber(moonAz)}°</span></div>
-                        <div class="astro-info-item"><span class="info-label">${t.altitudeLabel}</span><span class="info-value">${formatNumber(moonAlt)}°</span></div>
+                        <!-- Utilisation des nouveaux libellés pour la Lune -->
+                        <div class="astro-info-item"><span class="info-label">${t.moonAzimuthLabel}</span><span class="info-value">${formatNumber(moonAz)}°</span></div>
+                        <div class="astro-info-item"><span class="info-label">${t.moonAltitudeLabel}</span><span class="info-value">${formatNumber(moonAlt)}°</span></div>
                     </div>
                 </div>
                 <div class="visibility-section">
@@ -1483,7 +1497,7 @@
             document.getElementById('updatePanoramaBtn').textContent = t.updatePanoramaBtn;
             document.getElementById('searchLoading').textContent = t.searchLoading;
             
-            // Mise à jour des labels de temps (sauf GMT+/- qui est fixe)
+            // Mise à jour des labels de temps
             document.getElementById('dstLabel').textContent = t.dstLabel;
             
             updateConjunctionInfo();
