@@ -354,22 +354,79 @@
             font-family: Arial, sans-serif;
         }
         
+        /* تعديل رأس الصفحة: العنوان في سطر والأزرار في سطر آخر */
         .page-header {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
             margin-bottom: 30px;
         }
-        
-        .page-header h1 {
-            margin: 0;
+        .page-header .title-row {
             text-align: center;
-            grid-column: 2;
+        }
+        .page-header .title-row h1 {
+            margin: 0;
+        }
+        .page-header .buttons-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        #aboutBtn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            min-width: 120px;
+            text-align: center;
+        }
+        #aboutBtn:hover {
+            background: #1d4ed8;
         }
         
-        .language-selector {
-            grid-column: 3;
-            justify-self: end;
+        /* تعديل شكل الاقتران */
+        .conjunction-block {
+            margin-bottom:15px; 
+            padding:10px; 
+            background:#f3f4f6; 
+            border-radius:6px; 
+            text-align:center;
+        }
+        .conjunction-block .title {
+            font-weight:700; 
+            margin-bottom:10px;
+        }
+        .conjunction-dates {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .conjunction-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .conjunction-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .conjunction-date {
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+        
+        /* توسيط أيقونات الشمس والقمر والهلال */
+        .astro-header {
+            justify-content: center;
+        }
+        .visibility-header {
+            justify-content: center;
         }
         
         .error-message {
@@ -389,8 +446,11 @@
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
             border-radius: 10px;
             border: 1px solid rgba(37, 99, 235, 0.2);
-            text-align: center;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .author-signature:hover {
@@ -409,14 +469,25 @@
             text-decoration: underline;
         }
 
+        .author-left, .author-right {
+            display: flex;
+            flex-direction: column;
+        }
+        .author-left {
+            align-items: flex-start;
+        }
+        .author-right {
+            align-items: flex-end;
+        }
+
         @media (max-width: 768px) {
-            .author-signature > div:first-child {
-                grid-template-columns: 1fr;
+            .author-signature {
+                flex-direction: column;
+                align-items: center;
                 gap: 15px;
             }
-            
-            .author-signature {
-                padding: 15px;
+            .author-left, .author-right {
+                align-items: center;
             }
         }
 
@@ -454,49 +525,100 @@
             font-weight: normal;
         }
         
-        .conjunction-block {
-            margin-bottom:15px; 
-            padding:10px; 
-            background:#f3f4f6; 
-            border-radius:6px; 
-            text-align:center;
+        /* Styles pour la modale */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
         }
-        .conjunction-block .title {
-            font-weight:700; 
-            margin-bottom:5px;
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+            direction: ltr;
         }
-        .conjunction-block .dates {
-            display:flex; 
-            justify-content:space-between;
+        body[dir="rtl"] .modal-content {
+            direction: rtl;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        body[dir="rtl"] .close {
+            float: left;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal-content h3 {
+            color: #2563eb;
+            margin-top: 0;
+        }
+        .modal-content hr {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- رأس الصفحة حسب الطلب: العنوان في سطر والأزرار في سطر آخر -->
         <div class="page-header">
-            <h1 id="pageTitle">Observation du Croissant Lunaire (Hilal)</h1>
-            <div class="language-selector">
-                <div class="lang-dropdown">
-                    <button class="lang-dropdown-btn" onclick="toggleLangDropdown()">
-                        <span class="lang-flag" id="currentLangFlag">🇫🇷</span>
-                        <span id="currentLangText">Français</span>
-                        <span style="font-size: 12px;">▼</span>
-                    </button>
-                    <div class="lang-dropdown-content" id="langDropdown">
-                        <div class="lang-option active" onclick="changeLanguage('fr')">
-                            <span class="lang-flag">🇫🇷</span>
-                            <span>Français</span>
-                        </div>
-                        <div class="lang-option" onclick="changeLanguage('en')">
-                            <span class="lang-flag">🇬🇧</span>
-                            <span>English</span>
-                        </div>
-                        <div class="lang-option" onclick="changeLanguage('ar')">
-                            <span class="lang-flag">🇸🇦</span>
-                            <span>عربي</span>
+            <div class="title-row">
+                <h1 id="pageTitle">Observation du Croissant Lunaire (Hilal)</h1>
+            </div>
+            <div class="buttons-row">
+                <button id="aboutBtn">À propos</button>
+                <div class="language-selector">
+                    <div class="lang-dropdown">
+                        <button class="lang-dropdown-btn" onclick="toggleLangDropdown()">
+                            <span class="lang-flag" id="currentLangFlag">🇫🇷</span>
+                            <span id="currentLangText">Français</span>
+                            <span style="font-size: 12px;">▼</span>
+                        </button>
+                        <div class="lang-dropdown-content" id="langDropdown">
+                            <div class="lang-option active" onclick="changeLanguage('fr')">
+                                <span class="lang-flag">🇫🇷</span>
+                                <span>Français</span>
+                            </div>
+                            <div class="lang-option" onclick="changeLanguage('en')">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span>English</span>
+                            </div>
+                            <div class="lang-option" onclick="changeLanguage('ar')">
+                                <span class="lang-flag">🇸🇦</span>
+                                <span>عربي</span>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Modale "À propos" -->
+        <div id="aboutModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="aboutContent"></div>
             </div>
         </div>
         
@@ -534,10 +656,16 @@
             <div class="card">
                 <h2 id="dateTitle">3. Date et Critère de Visibilité</h2>
                 <div class="conjunction-block">
-                    <div class="title" id="conjunctionTitle">Conjonction</div>
-                    <div class="dates">
-                        <span><span id="prevConjLabel">Précédent</span> <span id="prevConjDate">---</span></span>
-                        <span><span id="nextConjLabel">Suivant</span> <span id="nextConjDate">---</span></span>
+                    <div class="title" id="conjunctionTitle">Conjonction (jour d'observation)</div>
+                    <div class="conjunction-dates">
+                        <div class="conjunction-item">
+                            <span class="conjunction-label" id="prevConjLabel">Précédent</span>
+                            <span class="conjunction-date" id="prevConjDate">---</span>
+                        </div>
+                        <div class="conjunction-item">
+                            <span class="conjunction-label" id="nextConjLabel">Suivant</span>
+                            <span class="conjunction-date" id="nextConjDate">---</span>
+                        </div>
                     </div>
                 </div>
                 <label for="date" id="dateLabel">Date</label>
@@ -585,42 +713,33 @@
         <div class="usage-note" id="usageNote"></div>
         
         <div class="author-signature">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: center;">
-                <div style="font-family: 'system-ui', sans-serif;">
-                    <div style="margin-bottom: 8px;">
-                        <span style="font-size: 1.2em; color: #2563eb; font-weight: 600;">Webdesigner:</span>
-                        <span style="font-size: 1.2em; color: #1f2937; font-weight: 600; margin-left: 8px;">Drif Ilyes</span>
-                    </div>
-                    <div style="font-size: 0.9em; color: #4b5563;">
-                        <span style="font-weight: 600;">Email:</span>
-                        <a href="mailto:Drif7777@gmail.com" style="color: #2563eb; text-decoration: none; margin-left: 5px;">Drif7777@gmail.com</a>
-                    </div>
-                </div>
-                <div style="font-family: 'system-ui', sans-serif; text-align: right;">
-                    <div style="margin-bottom: 8px;">
-                        <span style="font-size: 1.2em; color: #2563eb; font-weight: 600;">📌 Version:</span>
-                        <span style="font-size: 1.2em; color: #1f2937; font-weight: 600; margin-left: 8px;">2.0</span>
-                    </div>
-                    <div style="font-size: 0.9em; color: #4b5563;">
-                        <span style="font-weight: 600;">🌍 </span>
-                        <span>Altitude-adjusted criteria</span>
-                    </div>
+            <div class="author-left">
+                <div style="font-size: 1.2em; color: #2563eb; font-weight: 600;">Webdesigner: Drif Ilyes</div>
+                <div style="font-size: 0.9em; color: #4b5563;">
+                    <span style="font-weight: 600;">Email:</span>
+                    <a href="mailto:Drif7777@gmail.com" style="color: #2563eb; text-decoration: none; margin-left: 5px;">Drif7777@gmail.com</a>
                 </div>
             </div>
-            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(37, 99, 235, 0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                <p style="margin: 0; color: #6b7280; font-size: 0.9em;">
-                    <span>© 2026 - </span>
-                    <span lang="fr">Tous droits réservés</span>
-                    <span lang="en" style="display: none;">All rights reserved</span>
-                    <span lang="ar" style="display: none;" dir="rtl">جميع الحقوق محفوظة</span>
-                </p>
-                <p style="margin: 0; color: #2563eb; font-size: 0.9em;">
-                    <span>🔭 </span>
-                    <span lang="fr">Observation du Croissant Lunaire</span>
-                    <span lang="en" style="display: none;">Lunar Crescent Observation</span>
-                    <span lang="ar" style="display: none;" dir="rtl">رصد الهلال</span>
-                </p>
+            <div class="author-right">
+                <div style="font-size: 1.2em; color: #2563eb; font-weight: 600;">📌 Version: 2.0</div>
+                <div style="font-size: 0.9em; color: #4b5563;">
+                    <span style="font-weight: 600;">Altitude-adjusted criteria</span>
+                </div>
             </div>
+        </div>
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(37, 99, 235, 0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <p style="margin: 0; color: #6b7280; font-size: 0.9em;">
+                <span>© 2025 - </span>
+                <span lang="fr">Tous droits réservés</span>
+                <span lang="en" style="display: none;">All rights reserved</span>
+                <span lang="ar" style="display: none;" dir="rtl">جميع الحقوق محفوظة</span>
+            </p>
+            <p style="margin: 0; color: #2563eb; font-size: 0.9em;">
+                <span>🔭 </span>
+                <span lang="fr">Observation du Croissant Lunaire</span>
+                <span lang="en" style="display: none;">Lunar Crescent Observation</span>
+                <span lang="ar" style="display: none;" dir="rtl">رصد الهلال</span>
+            </p>
         </div>
     </div>
 
@@ -685,7 +804,7 @@
                 elongationLabel: "Élongation Soleil-Lune :",
                 crescentLabel: "Possibilité d'apercevoir le premier croissant :",
                 searchLoading: "Recherche en cours...",
-                alreadyHidden: "Déjà cachée",
+                alreadyHidden: "Déjà sous l'horizon",
                 nearHorizon: "Très proche de l'horizon",
                 aboveHorizon: "Au-dessus de l'horizon",
                 visibilityResults: {
@@ -714,7 +833,7 @@
                 step1Title: "Choisissez votre position",
                 step1Desc: "Utilisez la carte, recherchez un lieu ou cliquez sur \"Ma Position Actuelle\".",
                 step2Title: "Sélectionnez la date",
-                step2Desc: "Choisissez la date d'observation pour calculer les positions du soleil et de la lune.",
+                step2Desc: "Choisissez la date d'observation et ajustez le fuseau horaire pour calculer les positions du soleil et de la lune.",
                 step3Title: "Consultez les informations",
                 step3Desc: "Analysez les données astronomiques et la visibilité du croissant lunaire.",
                 step4Title: "Visualisez le panorama",
@@ -729,12 +848,53 @@
                 hours: "heures",
                 day: "jour",
                 days: "jours",
-                hourAbbr: " h",
-                minAbbr: " min",
-                conjunctionTitle: "Conjonction",
+                hourAbbr: "h",
+                minAbbr: "min",
+                conjunctionTitle: "Conjonction (jour d'observation)",
                 prevConjunction: "Précédent",
                 nextConjunction: "Suivant",
-                durationLabel: "Durée après coucher :"
+                durationLabel: "Durée après coucher :",
+                aboutBtn: "À propos",
+                aboutContent: `
+                    <h3>Observation du Croissant Lunaire (Hilal)</h3>
+                    <p>Le site web "Hilal" est un outil interactif spécialisé dans l'observation et la détermination de la visibilité du croissant lunaire (début du mois lunaire). Il s'appuie sur des calculs astronomiques précis prenant en compte la position de l'observateur (latitude, longitude, altitude) et la date d'observation. Il fournit des informations complètes sur les positions du soleil et de la lune au moment du coucher du soleil et applique plusieurs critères scientifiques pour prédire si le croissant sera visible à l'œil nu ou avec des instruments.</p>
+                    <hr>
+                    <h4>1. Position</h4>
+                    <ul>
+                        <li><strong>Recherche de lieu :</strong> L'utilisateur peut saisir le nom d'une ville ou d'une région (ex: "Paris, France") et le site proposera des résultats provenant de la base de données OpenStreetMap. La sélection d'un résultat ajuste automatiquement les coordonnées.</li>
+                        <li><strong>Ma position actuelle :</strong> Bouton utilisant la géolocalisation du navigateur pour obtenir les coordonnées précises de l'utilisateur.</li>
+                        <li><strong>Coordonnées manuelles :</strong> L'utilisateur peut saisir manuellement la latitude, la longitude et l'altitude.</li>
+                        <li><strong>Nom du lieu :</strong> Le nom du lieu est automatiquement affiché pour confirmer l'emplacement.</li>
+                    </ul>
+                    <h4>2. Carte interactive</h4>
+                    <ul>
+                        <li>Affiche le lieu sélectionné avec possibilité de changer de fond de carte (Standard, Relief, Satellite).</li>
+                        <li>Déplacer le marqueur ou cliquer sur la carte met à jour les coordonnées.</li>
+                    </ul>
+                    <h4>3. Date et critère de visibilité</h4>
+                    <ul>
+                        <li><strong>Date :</strong> Choix de la date d'observation.</li>
+                        <li><strong>Conjonction :</strong> Affiche les dates de la nouvelle lune précédente et suivante.</li>
+                        <li><strong>Critères de visibilité :</strong> Yallop, SAAO, Odeh, Danjon.</li>
+                        <li><strong>Options de temps :</strong> Réglage du décalage horaire (GMT+/-) et de l'heure d'été.</li>
+                    </ul>
+                    <h4>4. Informations astronomiques</h4>
+                    <ul>
+                        <li><strong>Soleil :</strong> Heure du coucher, azimut et altitude au coucher.</li>
+                        <li><strong>Lune :</strong> Heure du coucher, azimut et altitude au coucher du soleil.</li>
+                        <li><strong>Visibilité du croissant :</strong> État (déjà sous l'horizon, proche de l'horizon, au-dessus), âge de la Lune, illumination, élongation, durée de visibilité après le coucher, et estimation de la visibilité selon le critère choisi.</li>
+                    </ul>
+                    <h4>5. Panorama du relief</h4>
+                    <ul>
+                        <li><strong>Bouton "Mettre à jour le panorama" :</strong> Actualise la vue panoramique.</li>
+                        <li><strong>Vue panoramique :</strong> Affiche un panorama à 360° de l'horizon avec le relief environnant et la position de la Lune.</li>
+                    </ul>
+                    <h4>6. Guide d'utilisation</h4>
+                    <p>Explique brièvement les étapes : choisir le lieu, sélectionner la date, consulter les informations, et mettre à jour le panorama.</p>
+                    <h4>7. Multilingue</h4>
+                    <p>Le site supporte trois langues (français, anglais, arabe).</p>
+                    <p><strong>En résumé :</strong> L'outil combine calculs astronomiques (SunCalc), cartes et panorama interactif (PeakFinder) pour estimer la visibilité du croissant lunaire en tout lieu.</p>
+                `
             },
             en: {
                 pageTitle: "Lunar Crescent Observation (Hilal)",
@@ -779,7 +939,7 @@
                 elongationLabel: "Sun-Moon Elongation:",
                 crescentLabel: "Possibility of seeing the first crescent:",
                 searchLoading: "Searching...",
-                alreadyHidden: "Already hidden",
+                alreadyHidden: "Already below horizon",
                 nearHorizon: "Very close to horizon",
                 aboveHorizon: "Above horizon",
                 visibilityResults: {
@@ -808,7 +968,7 @@
                 step1Title: "Choose your location",
                 step1Desc: "Use the map, search for a place or click \"My Current Location\".",
                 step2Title: "Select the date",
-                step2Desc: "Choose the observation date to calculate sun and moon positions.",
+                step2Desc: "Choose the observation date and adjust the time zone to calculate sun and moon positions.",
                 step3Title: "Check the information",
                 step3Desc: "Analyze astronomical data and crescent moon visibility.",
                 step4Title: "View the panorama",
@@ -823,18 +983,59 @@
                 hours: "hours",
                 day: "day",
                 days: "days",
-                hourAbbr: " h",
-                minAbbr: " min",
-                conjunctionTitle: "Conjunction",
+                hourAbbr: "h",
+                minAbbr: "min",
+                conjunctionTitle: "Conjunction (observation day)",
                 prevConjunction: "Previous",
                 nextConjunction: "Next",
-                durationLabel: "Duration after sunset:"
+                durationLabel: "Duration after sunset:",
+                aboutBtn: "About",
+                aboutContent: `
+                    <h3>Lunar Crescent Observation (Hilal)</h3>
+                    <p>The "Hilal" website is an interactive tool specialized in observing and determining the visibility of the lunar crescent (beginning of the lunar month). It relies on precise astronomical calculations taking into account the observer's location (latitude, longitude, altitude) and the observation date. It provides comprehensive information on the positions of the sun and moon at sunset and applies several scientific criteria to predict whether the crescent will be visible to the naked eye or with instruments.</p>
+                    <hr>
+                    <h4>1. Position</h4>
+                    <ul>
+                        <li><strong>Place search:</strong> The user can enter a city or region name (e.g., "Paris, France") and the site will suggest results from the OpenStreetMap database. Selecting a result automatically adjusts the coordinates.</li>
+                        <li><strong>My current location:</strong> Button using browser geolocation to obtain the user's precise coordinates.</li>
+                        <li><strong>Manual coordinates:</strong> The user can manually enter latitude, longitude, and altitude.</li>
+                        <li><strong>Place name:</strong> The place name is automatically displayed to confirm the location.</li>
+                    </ul>
+                    <h4>2. Interactive Map</h4>
+                    <ul>
+                        <li>Displays the selected location with the ability to change the map layer (Standard, Relief, Satellite).</li>
+                        <li>Moving the marker or clicking on the map updates the coordinates.</li>
+                    </ul>
+                    <h4>3. Date and Visibility Criterion</h4>
+                    <ul>
+                        <li><strong>Date:</strong> Choose the observation date.</li>
+                        <li><strong>Conjunction:</strong> Displays the dates of the previous and next new moon.</li>
+                        <li><strong>Visibility criteria:</strong> Yallop, SAAO, Odeh, Danjon.</li>
+                        <li><strong>Time options:</strong> Adjust time offset (GMT+/-) and daylight saving time.</li>
+                    </ul>
+                    <h4>4. Astronomical Information</h4>
+                    <ul>
+                        <li><strong>Sun:</strong> Sunset time, azimuth and altitude at sunset.</li>
+                        <li><strong>Moon:</strong> Moonset time, azimuth and altitude at sunset.</li>
+                        <li><strong>Crescent visibility:</strong> State (already below horizon, near horizon, above), Moon age, illumination, elongation, visibility duration after sunset, and visibility estimate according to the chosen criterion.</li>
+                    </ul>
+                    <h4>5. Relief Panorama</h4>
+                    <ul>
+                        <li><strong>"Update panorama" button:</strong> Refreshes the panoramic view.</li>
+                        <li><strong>Panoramic view:</strong> Displays a 360° horizon panorama with surrounding terrain and the Moon's position.</li>
+                    </ul>
+                    <h4>6. Usage Guide</h4>
+                    <p>Briefly explains the steps: choose location, select date, check information, and update panorama.</p>
+                    <h4>7. Multilingual</h4>
+                    <p>The site supports three languages (French, English, Arabic).</p>
+                    <p><strong>In summary:</strong> The tool combines astronomical calculations (SunCalc), maps, and interactive panorama (PeakFinder) to estimate lunar crescent visibility anywhere.</p>
+                `
             },
             ar: {
                 pageTitle: "رصد الهلال",
                 positionTitle: "١. الموقع",
                 searchLabel: "البحث عن مكان:",
-                searchPlaceholder: "مثال: باريس، فرنسا",
+                searchPlaceholder: "مكة، السعودية",
                 locationBtn: "📍 موقعي الحالي",
                 locationPlaceholder: "اسم المكان (سيتم ملؤه تلقائياً)",
                 latLabel: "خط العرض",
@@ -873,7 +1074,7 @@
                 elongationLabel: "الاستطالة الشمس-قمر:",
                 crescentLabel: "إمكانية رؤية الهلال:",
                 searchLoading: "جاري البحث...",
-                alreadyHidden: "مخفي بالفعل",
+                alreadyHidden: "تحت الأفق",
                 nearHorizon: "قريب جداً من الأفق",
                 aboveHorizon: "فوق الأفق",
                 visibilityResults: {
@@ -902,7 +1103,7 @@
                 step1Title: "اختر موقعك",
                 step1Desc: "استخدم الخريطة، ابحث عن مكان أو انقر على \"موقعي الحالي\".",
                 step2Title: "حدد التاريخ",
-                step2Desc: "اختر تاريخ الرصد لحساب مواقع الشمس والقمر.",
+                step2Desc: "اختر تاريخ الرصد و عدل التوقيت المحلي لحساب مواقع الشمس والقمر.",
                 step3Title: "راجع المعلومات",
                 step3Desc: "حلل البيانات الفلكية وإمكانية رؤية الهلال.",
                 step4Title: "شاهد البانوراما",
@@ -917,12 +1118,62 @@
                 hours: "ساعات",
                 day: "يوم",
                 days: "أيام",
-                hourAbbr: " س",
-                minAbbr: " د",
-                conjunctionTitle: "الاقتران",
+                hourAbbr: "سا",
+                minAbbr: "د",
+                conjunctionTitle: "الاقتران (يوم الرصد)",
                 prevConjunction: "السابق",
                 nextConjunction: "القادم",
-                durationLabel: "المكث بعد الغروب :"
+                durationLabel: "المكث بعد الغروب :",
+                aboutBtn: "حول الموقع",
+                aboutContent: `
+                    <h3>رصد الهلال</h3>
+                    <p>الموقع الإلكتروني "هلال" (Hilal) هو أداة تفاعلية متخصصة في **رصد وتحديد إمكانية رؤية الهلال (بداية الشهر القمري)**. يعتمد على حسابات فلكية دقيقة تأخذ بعين الاعتبار موقع الراصد (خط العرض، خط الطول، الارتفاع) وتاريخ الرصد. يقدم الموقع معلومات شاملة عن أوضاع الشمس والقمر وقت غروب الشمس، ويطبق عدة معايير علمية للتنبؤ بمدى إمكانية رؤية الهلال بالعين المجردة أو باستخدام الأجهزة.</p>
+                    <hr>
+                    <h4>١. تحديد الموقع (Position)</h4>
+                    <ul>
+                        <li><strong>البحث عن مكان:</strong> يمكن للمستخدم إدخال اسم مدينة أو منطقة (مثل "مكة، السعودية") وسيقوم الموقع باقتراح نتائج من قاعدة بيانات OpenStreetMap. اختيار إحدى النتائج يضبط إحداثيات الموقع تلقائياً.</li>
+                        <li><strong>موقعي الحالي:</strong> زر يستخدم خاصية تحديد الموقع الجغرافي في المتصفح للحصول على إحداثيات المستخدم الحالية (خط الطول والعرض) بدقة، ويقوم بتعبئتها تلقائياً.</li>
+                        <li><strong>إحداثيات يدوية:</strong> يمكن للمستخدم إدخال قيم خط الطول والعرض والارتفاع يدوياً في حقول رقمية مع التحقق من صحتها (ضمن النطاقات المسموحة).</li>
+                        <li><strong>اسم الموقع:</strong> يتم عرض اسم الموقع (المدينة والبلد) المستخرج من الإحداثيات بشكل تلقائي لتأكيد الموقع.</li>
+                    </ul>
+                    <h4>٢. الخريطة التفاعلية (Interactive Map)</h4>
+                    <ul>
+                        <li>تعرض الخريطة الموقع المحدد (الخطوط العريضة) مع إمكانية تغيير طبقة الخريطة: **قياسي (OpenStreetMap)**، **تضاريس (Topographic)**، أو **قمر صناعي (Satellite)**.</li>
+                        <li>يمكن تحريك العلامة (Marker) على الخريطة لضبط الموقع مباشرة، أو النقر على أي نقطة في الخريطة لتحديث الإحداثيات تلقائياً.</li>
+                    </ul>
+                    <h4>٣. التاريخ ومعيار الرؤية (Date and Visibility Criterion)</h4>
+                    <ul>
+                        <li><strong>التاريخ:</strong> يختار المستخدم تاريخ الرصد (بالتقويم الميلادي).</li>
+                        <li><strong>الاقتران (Conjunction):</strong> يعرض الموقع تاريخ الاقتران (المحاق) السابق والتالي للتاريخ المحدد، مما يساعد في تحديد بداية الشهر القمري بدقة.</li>
+                        <li><strong>معايير الرؤية:</strong> قائمة منسدلة تتيح اختيار المعيار العلمي المستخدم لتقييم إمكانية رؤية الهلال: Yallop (يالوب)، SAAO (المرصد الفلكي لجنوب إفريقيا)، Odeh (عودة)، Danjon (دانجون).</li>
+                        <li><strong>خيارات التوقيت (GMT +/-):</strong> يمكن للمستخدم ضبط التوقيت المحلي (إضافة أو طرح ساعات) وتفعيل التوقيت الصيفي (DST) لعرض أوقات الشروق والغروب بالتوقيت المحلي المطلوب.</li>
+                    </ul>
+                    <h4>٤. المعلومات الفلكية (Astronomical Information)</h4>
+                    <ul>
+                        <li><strong>الشمس (Sun):</strong> يعرض وقت غروب الشمس، وسمتها (الاتجاه) وارتفاعها وقت الغروب.</li>
+                        <li><strong>القمر (Moon):</strong> يعرض وقت غروب القمر (إذا كان يحدث بعد غروب الشمس)، بالإضافة إلى **السمت (عند غروب الشمس)** و**الارتفاع (عند غروب الشمس)**. هذه القيم أساسية لتحديد موقع الهلال في الأفق الغربي.</li>
+                        <li><strong>رؤية الهلال (Lunar Crescent Visibility):</strong>
+                            <ul>
+                                <li><strong>الحالة:</strong> يوضح ما إذا كان القمر لا يزال فوق الأفق أم قريباً منه أم قد اختفى بالفعل.</li>
+                                <li><strong>عمر القمر:</strong> الزمن المنقضي منذ المحاق الأخير (بالساعات أو الأيام).</li>
+                                <li><strong>الإضاءة:</strong> النسبة المئوية لقرص القمر المضاء.</li>
+                                <li><strong>الاستطالة (الزاوية بين الشمس والقمر):</strong> زاوية فصل القمر عن الشمس، وهي عامل حاسم في الرؤية.</li>
+                                <li><strong>المكث بعد الغروب:</strong> المدة الزمنية التي يبقى فيها القمر في السماء بعد غروب الشمس (بالساعات والدقائق). هذه المدة تسمح برؤية الهلال قبل أن يغرب.</li>
+                                <li><strong>إمكانية رؤية الهلال:</strong> بناءً على المعيار المختار، يصدر الموقع تقديراً مثل: "غير مرئي"، "مرئي بالأداة"، "ممكن بالعين المجردة"، أو "سهل بالعين المجردة". يتم تلوين النتيجة وفقاً لذلك (أحمر، برتقالي، أخضر).</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <h4>٥. بانوراما التضاريس (Relief Panorama)</h4>
+                    <ul>
+                        <li><strong>زر "تحديث البانوراما" (Update panorama):</strong> يتم تحديث عرض البانوراما يدوياً بالضغط على هذا الزر.</li>
+                        <li><strong>عرض البانوراما:</strong> يعرض منظراً بانورامياً للأفق (360 درجة) من موقع الراصد، مع رسم للتضاريس (الجبال، التلال) المحيطة. يتم تحديد موقع القمر بدقة على هذه البانوراما، مما يسمح للمستخدم بمعرفة ما إذا كان الهلال سيظهر فوق أي عائق طبيعي أم سيكون خلف الجبال. هذا يساعد في التخطيط لرصد ميداني فعال.</li>
+                    </ul>
+                    <h4>٦. دليل الاستخدام (Usage Note)</h4>
+                    <p>يشرح باختصار كيفية استخدام الأداة على أربع خطوات: اختيار الموقع، تحديد التاريخ، الاطلاع على المعلومات الفلكية، وتحديث البانوراما لمشاهدة موقع القمر.</p>
+                    <h4>٧. تعدد اللغات (Language Selector)</h4>
+                    <p>يدعم الموقع ثلاث لغات (الفرنسية، الإنجليزية، العربية) ويتم تحديث جميع المحتويات عند اختيار لغة جديدة.</p>
+                    <p><strong>باختصار:</strong> الموقع هو أداة متكاملة تجمع بين الحسابات الفلكية (باستخدام مكتبة SunCalc) والخرائط والبانوراما التفاعلية (PeakFinder) لتقديم تقدير دقيق ومرئي لإمكانية رؤية هلال بداية الشهر القمري من أي مكان في العالم.</p>
+                `
             }
         };
 
@@ -1287,16 +1538,16 @@
             }
         }
 
-        // ==================== Fonction pour formater la durée avec unités traduites ====================
+        // ==================== Fonction pour formater la durée avec unités traduites et espace ====================
         function formatDuration(minutes) {
             if (minutes < 0) return "0";
             const hours = Math.floor(minutes / 60);
             const mins = Math.floor(minutes % 60);
             const t = translations[currentLang];
             if (hours > 0) {
-                return `${hours}${t.hourAbbr} ${mins}${t.minAbbr}`;
+                return `${hours} ${t.hourAbbr} ${mins} ${t.minAbbr}`;
             } else {
-                return `${mins}${t.minAbbr}`;
+                return `${mins} ${t.minAbbr}`;
             }
         }
 
@@ -1500,6 +1751,9 @@
             // Mise à jour des labels de temps
             document.getElementById('dstLabel').textContent = t.dstLabel;
             
+            // Bouton "À propos"
+            document.getElementById('aboutBtn').textContent = t.aboutBtn;
+            
             updateConjunctionInfo();
             // Les infos sont mises à jour par updateInfo() appelé ailleurs
         }
@@ -1560,6 +1814,27 @@
                 document.getElementById('pfcanvasprogress').style.display = 'none';
                 // On ne lance pas le panorama automatiquement
             });
+        }
+
+        // Gestion de la modale
+        const modal = document.getElementById('aboutModal');
+        const aboutBtn = document.getElementById('aboutBtn');
+        const span = document.getElementsByClassName('close')[0];
+        const aboutContent = document.getElementById('aboutContent');
+
+        aboutBtn.onclick = function() {
+            aboutContent.innerHTML = translations[currentLang].aboutContent;
+            modal.style.display = "block";
+        }
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
         }
 
         document.addEventListener('click', function(e) {
