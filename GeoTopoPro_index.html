@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTopo Pro - Outil Topographique Complet</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script async src="https://www.peakfinder.com/script/peakfinder.1.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --secondary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 1400px; margin: auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; padding: 20px 0; margin-bottom: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .nav-tabs { display: flex; gap: 5px; margin-bottom: 20px; background: var(--card-bg); padding: 10px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; }
+        .nav-tab { padding: 12px 20px; background: transparent; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--text-light); white-space: nowrap; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+        .nav-tab:hover { background: var(--bg); color: var(--primary); }
+        .nav-tab.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { border: 1px solid var(--border); border-radius: 10px; padding: 20px; background: var(--card-bg); box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+        .card-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        label { font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-light); }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1); }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--secondary); transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        #map { height: 500px; border-radius: 6px; margin-bottom: 15px; }
+        .map-info { background: rgba(255,255,255,0.9); padding: 10px 15px; border-radius: 6px; font-size: 14px; margin-bottom: 10px; }
+        .table-container { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg); font-weight: 700; color: var(--text-light); }
+        tr:hover { background: var(--bg); }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+        .info-item { background: var(--bg); padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); }
+        .info-item-label { font-size: 12px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
+        .info-item-value { font-size: 18px; font-weight: 700; color: var(--text); }
+        .content { position: relative; height: 420px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 15px; }
+        #pfcanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #pfcanvasprogress { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.8); z-index: 10; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 800px; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; text-decoration: none; cursor: pointer; }
+        .modal-content h3 { color: var(--primary); margin-top: 0; }
+        .modal-content hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
+        .lang-dropdown { background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
+        .lang-dropdown-btn { padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; min-width: 140px; justify-content: space-between; }
+        .lang-dropdown-btn:hover { background: var(--secondary); }
+        .lang-dropdown-content { display: none; position: absolute; top: 100%; right: 0; background: white; min-width: 140px; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 5px; z-index: 1000; }
+        .lang-dropdown-content.show { display: block; }
+        .lang-option { padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+        .lang-option:last-child { border-bottom: none; }
+        .lang-option:hover { background: var(--bg); }
+        .lang-option.active { background: var(--primary); color: white; }
+        .lang-flag { font-size: 18px; }
+        .mt-10 { margin-top: 10px; }
+        .mt-20 { margin-top: 20px; }
+        .mb-10 { margin-bottom: 10px; }
+        .mb-20 { margin-bottom: 20px; }
+        @media (max-width: 768px) { .header h1 { font-size: 1.4rem; } .header-content { flex-direction: column; text-align: center; } .nav-tabs { flex-wrap: nowrap; overflow-x: auto; } .form-row { grid-template-columns: 1fr; } #map { height: 350px; } }
+        @media print { .header, .nav-tabs, .btn-group, .language-selector { display: none !important; } .card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; } body { background: white; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>&#128200; GeoTopo Pro - Outil Topographique Complet</h1>
+                <div class="header-actions">
+                    <button class="btn-secondary" onclick="exportData()">&#128197; Exporter</button>
+                    <button class="btn-secondary" onclick="importData()">&#128196; Importer</button>
+                    <button class="btn-secondary" onclick="printPage()">&#128423; Imprimer</button>
+                    <div class="language-selector">
+                        <div class="lang-dropdown">
+                            <button class="lang-dropdown-btn" onclick="toggleLangDropdown()">
+                                <span class="lang-flag" id="currentLangFlag">&#127467;&#127479;</span>
+                                <span id="currentLangText">Français</span>
+                                <span style="font-size: 12px;">&#9660;</span>
+                            </button>
+                            <div class="lang-dropdown-content" id="langDropdown">
+                                <div class="lang-option active" onclick="changeLanguage('fr')">
+                                    <span class="lang-flag">&#127467;&#127479;</span>
+                                    <span>Français</span>
+                                </div>
+                                <div class="lang-option" onclick="changeLanguage('en')">
+                                    <span class="lang-flag">&#127468;&#127470;</span>
+                                    <span>English</span>
+                                </div>
+                                <div class="lang-option" onclick="changeLanguage('ar')">
+                                    <span class="lang-flag">&#127462;&#127466;</span>
+                                    <span>العربية</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="aboutBtn" class="btn-secondary">&#8505; À propos</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('map')" data-tab="map">&#128506; Carte Topo</button>
+            <button class="nav-tab" onclick="switchTab('measure')" data-tab="measure">&#128201; Mesures</button>
+            <button class="nav-tab" onclick="switchTab('calculations')" data-tab="calculations">&#10135; Calculs</button>
+            <button class="nav-tab" onclick="switchTab('points')" data-tab="points">&#128189; Points</button>
+            <button class="nav-tab" onclick="switchTab('panorama')" data-tab="panorama">&#127748; Panorama</button>
+            <button class="nav-tab" onclick="switchTab('astro')" data-tab="astro">&#127769; Astronomie</button>
+        </div>
+
+        <!-- Tab: Map -->
+        <div id="map-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i>&#128506;</i> Carte Topographique</div>
+                    <div class="btn-group">
+                        <button class="btn-primary" onclick="locateMe()">&#128189; Localiser</button>
+                        <button class="btn-secondary" onclick="clearMap()">&#128465; Effacer</button>
+                    </div>
+                </div>
+                <div class="map-controls">
+                    <div class="btn-group">
+                        <button class="btn-secondary active" onclick="switchMapLayer('osm')">OSM Standard</button>
+                        <button class="btn-secondary" onclick="switchMapLayer('terrain')">Terrain</button>
+                        <button class="btn-secondary" onclick="switchMapLayer('satellite')">Satellite</button>
+                        <button class="btn-secondary" onclick="switchMapLayer('topo')">Topographique</button>
+                    </div>
+                </div>
+                <div class="map-info" id="mapInfo">
+                    Coordonnées: Lat: <span id="currentLat">0</span>, Lng: <span id="currentLng">0</span> | 
+                    Altitude: <span id="currentEle">0</span> m | Zoom: <span id="currentZoom">10</span>
+                </div>
+                <div id="map"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="locationSearch">Rechercher un lieu</label>
+                        <input type="text" id="locationSearch" placeholder="Entrer une adresse ou un lieu...">
+                        <div class="search-results" id="searchResults" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-top: 5px; background: white; display: none;"></div>
+                        <div class="search-loading" id="searchLoading" style="color: var(--text-light); font-style: italic; margin-top: 5px; display: none;">Recherche en cours...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Measure -->
+        <div id="measure-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i>&#128201;</i> Outils de Mesure</div>
+                </div>
+                <div class="btn-group mb-20">
+                    <button class="btn-primary" onclick="clearMeasurements()">&#128465; Effacer Mesures</button>
+                </div>
+                <div class="info-grid" id="measurementResults">
+                    <div class="info-item">
+                        <div class="info-item-label">Distance Totale</div>
+                        <div class="info-item-value" id="totalDistance">0 m</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Surface Totale</div>
+                        <div class="info-item-value" id="totalArea">0 m²</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Nombre de Points</div>
+                        <div class="info-item-value" id="pointCount">0</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Type</th><th>Valeur</th><th>Unité</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="measurementsList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Calculations -->
+        <div id="calculations-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i>&#10135;</i> Calculs Topographiques</div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Calcul de Pente (%)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <input type="number" id="slopeDistance" placeholder="Distance horizontale (m)" step="0.01">
+                            <input type="number" id="slopeHeight" placeholder="Dénivelé (m)" step="0.01">
+                        </div>
+                        <button class="btn-success mt-10" onclick="calculateSlope()">Calculer Pente</button>
+                        <div class="info-item mt-10">
+                            <div class="info-item-label">Pente</div>
+                            <div class="info-item-value" id="slopeResult">0 %</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Calcul de Nivellement</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <input type="number" id="levelPoint1" placeholder="Cote point A (m)" step="0.001">
+                            <input type="number" id="levelPoint2" placeholder="Cote point B (m)" step="0.001">
+                        </div>
+                        <button class="btn-success mt-10" onclick="calculateLeveling()">Calculer</button>
+                        <div class="info-item mt-10">
+                            <div class="info-item-label">Dénivelé</div>
+                            <div class="info-item-value" id="levelingResult">0 m</div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="mt-20 mb-20">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Calcul de Surface (Polygone)</label>
+                        <textarea id="polygonPoints" placeholder="Ex: (0,0); (10,0); (10,10); (0,10)" rows="3"></textarea>
+                        <button class="btn-success mt-10" onclick="calculatePolygonArea()">Calculer Surface</button>
+                        <div class="info-item mt-10">
+                            <div class="info-item-label">Surface Polygone</div>
+                            <div class="info-item-value" id="polygonAreaResult">0 m²</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Conversion d'Unités</label>
+                        <select id="convertFrom" class="mb-10">
+                            <option value="m">Mètres</option>
+                            <option value="km">Kilomètres</option>
+                            <option value="ft">Pieds</option>
+                            <option value="yd">Yards</option>
+                            <option value="mi">Miles</option>
+                        </select>
+                        <select id="convertTo" class="mb-10">
+                            <option value="m">Mètres</option>
+                            <option value="km">Kilomètres</option>
+                            <option value="ft">Pieds</option>
+                            <option value="yd">Yards</option>
+                            <option value="mi">Miles</option>
+                        </select>
+                        <input type="number" id="convertValue" placeholder="Valeur" step="0.001">
+                        <button class="btn-success mt-10" onclick="convertUnits()">Convertir</button>
+                        <div class="info-item mt-10">
+                            <div class="info-item-label">Résultat</div>
+                            <div class="info-item-value" id="conversionResult">0</div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="mt-20 mb-20">
+                <div class="form-group">
+                    <label>Calcul de Coordonnées (Méthode Polaire)</label>
+                    <div class="form-row">
+                        <input type="number" id="polarBaseLat" placeholder="Latitude base (°)" step="0.000001">
+                        <input type="number" id="polarBaseLng" placeholder="Longitude base (°)" step="0.000001">
+                        <input type="number" id="polarDistance" placeholder="Distance (m)" step="0.01">
+                        <input type="number" id="polarAngle" placeholder="Azimut (°)" step="0.01">
+                    </div>
+                    <button class="btn-success mt-10" onclick="calculatePolarCoordinates()">Calculer Coordonnées</button>
+                    <div class="info-grid mt-10">
+                        <div class="info-item">
+                            <div class="info-item-label">Latitude Résultat</div>
+                            <div class="info-item-value" id="polarResultLat">0</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-item-label">Longitude Résultat</div>
+                            <div class="info-item-value" id="polarResultLng">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Points -->
+        <div id="points-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i>&#128189;</i> Gestion des Points Topographiques</div>
+                    <button class="btn-primary" onclick="showAddPointModal()">&#10010; Ajouter Point</button>
+                </div>
+                <div class="btn-group mb-20">
+                    <button class="btn-secondary" onclick="exportPoints()">&#128197; Exporter Points</button>
+                    <button class="btn-secondary" onclick="importPoints()">&#128196; Importer Points</button>
+                    <button class="btn-danger" onclick="clearAllPoints()">&#128465; Tout Effacer</button>
+                </div>
+                <div class="info-grid mb-20">
+                    <div class="info-item">
+                        <div class="info-item-label">Points Totaux</div>
+                        <div class="info-item-value" id="totalPoints">0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Points Visibles</div>
+                        <div class="info-item-value" id="visiblePoints">0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Altitude Moyenne</div>
+                        <div class="info-item-value" id="avgElevation">0 m</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Nom</th><th>Latitude</th><th>Longitude</th><th>Altitude (m)</th><th>Description</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="pointsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Panorama -->
+        <div id="panorama-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i>&#127748;</i> Panorama 360°</div>
+                </div>
+                <div class="form-row mb-20">
+                    <div class="form-group">
+                        <label for="panoDate">Date</label>
+                        <input type="date" id="panoDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="panoTime">Heure (UTC)</label>
+                        <input type="time" id="panoTime">
+                    </div>
+                </div>
+                <div class="content">
+                    <div id="pfcanvasprogress"><div class="spinner"></div></div>
+                    <canvas id="pfcanvas"></canvas>
+                </div>
+                <div class="btn-group mt-20">
+                    <button class="btn-primary" onclick="updatePanorama()">&#8634; Mettre à jour</button>
+                    <button class="btn-secondary" onclick="toggleSunMoon()">&#127775;/&#127769; Soleil/Lune</button>
+                    <button class="btn-secondary" onclick="toggleGrid()">&#128200; Grille</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Astronomie -->
+        <div id="astro-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i>&#127769;</i> Observation du Croissant Lunaire (Hilal)</div>
+                </div>
+                <div class="form-row mb-20">
+                    <div class="form-group">
+                        <label for="astroDate">Date</label>
+                        <input type="date" id="astroDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="astroLat">Latitude (°)</label>
+                        <input type="number" id="astroLat" step="0.000001" value="36.20534">
+                    </div>
+                    <div class="form-group">
+                        <label for="astroLng">Longitude (°)</label>
+                        <input type="number" id="astroLng" step="0.000001" value="5.41173">
+                    </div>
+                    <div class="form-group">
+                        <label for="astroEle">Altitude (m)</label>
+                        <input type="number" id="astroEle" step="1" value="0">
+                    </div>
+                </div>
+                <div class="btn-group mb-20">
+                    <button class="btn-primary" onclick="updateAstroInfo()">&#8634; Calculer</button>
+                    <button class="btn-secondary" onclick="useCurrentPosition()">&#128189; Position Actuelle</button>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-item-label">Lever du Soleil</div>
+                        <div class="info-item-value" id="sunriseTime">--:--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Coucher du Soleil</div>
+                        <div class="info-item-value" id="sunsetTime">--:--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Lever de la Lune</div>
+                        <div class="info-item-value" id="moonriseTime">--:--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Coucher de la Lune</div>
+                        <div class="info-item-value" id="moonsetTime">--:--</div>
+                    </div>
+                </div>
+                <div class="info-grid mt-20">
+                    <div class="info-item">
+                        <div class="info-item-label">Age de la Lune</div>
+                        <div class="info-item-value" id="moonAge">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Phase Lunaire</div>
+                        <div class="info-item-value" id="moonPhase">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Illumination</div>
+                        <div class="info-item-value" id="moonIllumination">-- %</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-label">Azimut Lune</div>
+                        <div class="info-item-value" id="moonAzimuth">--°</div>
+                    </div>
+                </div>
+                <div class="card mt-20">
+                    <div class="card-header">
+                        <div class="card-title"><i>&#128065;</i> Visibilité du Croissant</div>
+                    </div>
+                    <div id="visibilityInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Point Modal -->
+    <div id="addPointModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddPointModal()">&times;</span>
+            <h3>Ajouter un Point Topographique</h3>
+            <hr>
+            <div class="form-group">
+                <label for="pointName">Nom du Point</label>
+                <input type="text" id="pointName" placeholder="Ex: A1, Repère 1, etc.">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pointLat">Latitude (°)</label>
+                    <input type="number" id="pointLat" step="0.000001">
+                </div>
+                <div class="form-group">
+                    <label for="pointLng">Longitude (°)</label>
+                    <input type="number" id="pointLng" step="0.000001">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="pointEle">Altitude (m)</label>
+                <input type="number" id="pointEle" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="pointDesc">Description</label>
+                <textarea id="pointDesc" rows="3" placeholder="Description du point..."></textarea>
+            </div>
+            <div class="btn-group mt-20">
+                <button class="btn-success" onclick="addPoint()">&#10003; Enregistrer</button>
+                <button class="btn-secondary" onclick="closeAddPointModal()">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('aboutModal').style.display='none'">&times;</span>
+            <h3>À propos de GeoTopo Pro</h3>
+            <hr>
+            <p><strong>GeoTopo Pro</strong> est une application web complète pour les géomètres topographes et professionnels du domaine.</p>
+            <p>Elle combine des outils de mesure, de calcul topographique, de gestion de points et d'observation astronomique.</p>
+            <h4 class="mt-20">Fonctionnalités principales:</h4>
+            <ul style="line-height: 2;">
+                <li><strong>Carte Topographique:</strong> Visualisation avec différentes couches de cartes (OSM, terrain, satellite)</li>
+                <li><strong>Mesures:</strong> Mesure de distances, surfaces directement sur la carte avec Leaflet Draw</li>
+                <li><strong>Calculs Topographiques:</strong> Calculs de pente, nivellement, surfaces de polygones, conversions d'unités, coordonnées polaires</li>
+                <li><strong>Gestion des Points:</strong> Stockage et gestion des points topographiques avec export/import CSV</li>
+                <li><strong>Panorama 360°:</strong> Visualisation du panorama avec position du soleil et de la lune</li>
+                <li><strong>Astronomie:</strong> Calculs de visibilité du croissant lunaire (Hilal)</li>
+            </ul>
+            <h4 class="mt-20">Technologies utilisées:</h4>
+            <ul style="line-height: 2;">
+                <li>Leaflet.js pour les cartes</li>
+                <li>Leaflet Draw pour les outils de dessin</li>
+                <li>SunCalc pour les calculs astronomiques</li>
+                <li>PeakFinder pour le panorama 360°</li>
+            </ul>
+            <h4 class="mt-20">Auteur:</h4>
+            <p>Version: 2.0.0</p>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let map, layers = {}, marker, drawnItems, panel, isReady = false, currentLang = 'fr', points = [], measurements = [];
+
+        // Initialisation au chargement de la page
+        window.onload = async function() {
+            const today = new Date();
+            document.getElementById('panoDate').valueAsDate = today;
+            document.getElementById('panoTime').value = today.toTimeString().slice(0, 5);
+            document.getElementById('astroDate').valueAsDate = today;
+
+            // Initialiser la carte
+            initMap();
+            
+            // Initialiser PeakFinder
+            initPeakFinder();
+
+            // Charger les points sauvegardés
+            loadPoints();
+
+            // Mettre à jour les informations
+            updateMapInfo();
+            updateAstroInfo();
+
+            // Événements
+            document.getElementById('locationSearch').addEventListener('input', handleSearchInput);
+            document.getElementById('locationSearch').addEventListener('keypress', e => { if (e.key === 'Enter') searchLocation(); });
+            document.getElementById('astroDate').addEventListener('change', updateAstroInfo);
+            document.getElementById('astroLat').addEventListener('change', updateAstroInfo);
+            document.getElementById('astroLng').addEventListener('change', updateAstroInfo);
+            document.getElementById('astroEle').addEventListener('change', updateAstroInfo);
+
+            // Gestion du dropdown de langue
+            document.addEventListener('click', function(e) {
+                const dd = document.getElementById('langDropdown');
+                const btn = document.querySelector('.lang-dropdown-btn');
+                if (!dd.contains(e.target) && !btn.contains(e.target)) dd.classList.remove('show');
+            });
+
+            // Gestion de la modale À propos
+            const aboutBtn = document.getElementById('aboutBtn');
+            aboutBtn.onclick = function() { document.getElementById('aboutModal').style.display = "block"; };
+
+            // Mettre à jour le panorama
+            setTimeout(updatePanorama, 1000);
+        };
+
+        // Initialisation de la carte
+        function initMap() {
+            layers.osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+            layers.terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
+            layers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+            layers.topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' });
+
+            map = L.map('map', { center: [36.20534, 5.41173], zoom: 10, layers: [layers.osm] });
+            L.control.scale().addTo(map);
+            L.control.layers(layers, {}, { position: 'topleft' }).addTo(map);
+
+            drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            marker = L.marker(map.getCenter(), { 
+                draggable: true, 
+                icon: L.icon({ 
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                    iconSize: [32, 32], 
+                    iconAnchor: [16, 32] 
+                }) 
+            }).addTo(map);
+
+            map.on('click', function(e) { setPosition(e.latlng.lat, e.latlng.lng); });
+            marker.on('dragend', function() { const pos = marker.getLatLng(); setPosition(pos.lat, pos.lng); });
+            map.on('moveend', updateMapInfo);
+            map.on('zoomend', updateMapInfo);
+
+            initDrawControls();
+        }
+
+        function initDrawControls() {
+            const drawControl = new L.Control.Draw({
+                edit: { featureGroup: drawnItems },
+                draw: { polygon: true, polyline: true, rectangle: true, circle: true, marker: true, circlemarker: false }
+            });
+            map.addControl(drawControl);
+
+            map.on(L.Draw.Event.CREATED, function(e) { 
+                drawnItems.addLayer(e.layer); 
+                updateMeasurementDisplay(); 
+            });
+            map.on(L.Draw.Event.EDITED, updateMeasurementDisplay);
+            map.on(L.Draw.Event.DELETED, updateMeasurementDisplay);
+        }
+
+        function switchMapLayer(layerKey) {
+            Object.values(layers).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
+            layers[layerKey].addTo(map);
+            document.querySelectorAll('.map-controls button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setPosition(lat, lng) {
+            document.getElementById('astroLat').value = lat.toFixed(6);
+            document.getElementById('astroLng').value = lng.toFixed(6);
+            map.setView([lat, lng], map.getZoom());
+            marker.setLatLng([lat, lng]);
+            fetchElevation(lat, lng);
+            updateMapInfo();
+            updateAstroInfo();
+        }
+
+        async function fetchElevation(lat, lng) {
+            try {
+                const resp = await fetch(`https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lng}`);
+                const json = await resp.json();
+                const ele = Math.round(json.results[0].elevation);
+                document.getElementById('currentEle').textContent = ele;
+                document.getElementById('astroEle').value = ele;
+            } catch { document.getElementById('currentEle').textContent = 'N/A'; }
+        }
+
+        function updateMapInfo() {
+            const center = map.getCenter();
+            document.getElementById('currentLat').textContent = center.lat.toFixed(6);
+            document.getElementById('currentLng').textContent = center.lng.toFixed(6);
+            document.getElementById('currentZoom').textContent = map.getZoom();
+        }
+
+        function locateMe() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) { setPosition(position.coords.latitude, position.coords.longitude); },
+                    function(error) { alert('Impossible de récupérer votre position: ' + error.message); }
+                );
+            } else {
+                alert('La géolocalisation nest pas supportée');
+            }
+        }
+
+        function clearMap() { drawnItems.clearLayers(); updateMeasurementDisplay(); }
+
+        // Recherche de lieu
+        let searchTimeout;
+        function handleSearchInput() {
+            const query = document.getElementById('locationSearch').value;
+            if (query.length < 3) { document.getElementById('searchResults').style.display = 'none'; return; }
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => { searchLocation(query); }, 500);
+        }
+
+        async function searchLocation(query) {
+            if (!query) { document.getElementById('searchResults').style.display = 'none'; return; }
+            document.getElementById('searchLoading').style.display = 'block';
+            document.getElementById('searchResults').style.display = 'none';
+            try {
+                const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const data = await resp.json();
+                const resultsDiv = document.getElementById('searchResults');
+                resultsDiv.innerHTML = '';
+                if (data.length === 0) { resultsDiv.innerHTML = '<div style="padding: 8px 12px;">Aucun résultat</div>'; }
+                else {
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.style.padding = '8px 12px';
+                        div.style.cursor = 'pointer';
+                        div.style.borderBottom = '1px solid var(--border)';
+                        div.innerHTML = '<strong>' + item.display_name.split(',')[0] + '</strong><br><small>' + item.display_name + '</small>';
+                        div.onclick = () => { setPosition(parseFloat(item.lat), parseFloat(item.lon)); document.getElementById('locationSearch').value = ''; resultsDiv.style.display = 'none'; };
+                        resultsDiv.appendChild(div);
+                    });
+                }
+                resultsDiv.style.display = 'block';
+            } catch (error) { console.error('Search error:', error); }
+            finally { document.getElementById('searchLoading').style.display = 'none'; }
+        }
+
+        // Mesures
+        function updateMeasurementDisplay() {
+            let totalDistance = 0, totalArea = 0, pointCount = 0;
+            drawnItems.eachLayer(layer => {
+                if (layer instanceof L.Polyline) {
+                    const latlngs = layer.getLatLngs();
+                    let dist = 0;
+                    for (let i = 1; i < latlngs.length; i++) {
+                        dist += latlngs[i].distanceTo(latlngs[i-1]);
+                    }
+                    totalDistance += dist;
+                } else if (layer instanceof L.Polygon) {
+                    totalArea += Math.abs(L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]));
+                } else if (layer instanceof L.Marker) {
+                    pointCount++;
+                }
+            });
+            document.getElementById('totalDistance').textContent = formatDistance(totalDistance);
+            document.getElementById('totalArea').textContent = formatArea(totalArea);
+            document.getElementById('pointCount').textContent = pointCount;
+
+            const tableBody = document.getElementById('measurementsList');
+            tableBody.innerHTML = '';
+            drawnItems.eachLayer((layer, index) => {
+                const row = document.createElement('tr');
+                let type, value, unit;
+                if (layer instanceof L.Polyline) {
+                    type = 'Distance';
+                    const latlngs = layer.getLatLngs();
+                    let dist = 0;
+                    for (let i = 1; i < latlngs.length; i++) dist += latlngs[i].distanceTo(latlngs[i-1]);
+                    value = dist;
+                    unit = 'm';
+                } else if (layer instanceof L.Polygon) {
+                    type = 'Surface';
+                    value = Math.abs(L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]));
+                    unit = 'm²';
+                } else if (layer instanceof L.Marker) {
+                    type = 'Point';
+                    value = '--';
+                    unit = '';
+                } else { type = 'Inconnu'; value = '--'; unit = ''; }
+                row.innerHTML = '<td>' + type + '</td><td>' + (value !== '--' ? formatNumber(value) : value) + '</td><td>' + unit + '</td><td><button class="btn-danger" onclick="removeMeasurement(' + index + ')">Supprimer</button></td>';
+                tableBody.appendChild(row);
+            });
+        }
+
+        function removeMeasurement(index) {
+            const layers = drawnItems.getLayers();
+            if (index >= 0 && index < layers.length) {
+                drawnItems.removeLayer(layers[index]);
+                updateMeasurementDisplay();
+            }
+        }
+
+        function clearMeasurements() { drawnItems.clearLayers(); updateMeasurementDisplay(); }
+        function formatDistance(m) { return m < 1000 ? m.toFixed(2) + ' m' : (m / 1000).toFixed(2) + ' km'; }
+        function formatArea(m2) { return m2 < 10000 ? m2.toFixed(2) + ' m²' : (m2 / 10000).toFixed(2) + ' ha'; }
+        function formatNumber(num) { if (typeof num !== 'number') return num; return num.toFixed(2).replace(/\.00$/, ''); }
+
+        // Calculs topographiques
+        function calculateSlope() {
+            const d = parseFloat(document.getElementById('slopeDistance').value) || 0;
+            const h = parseFloat(document.getElementById('slopeHeight').value) || 0;
+            if (d === 0) { alert('Veuillez entrer une distance horizontale'); return; }
+            document.getElementById('slopeResult').textContent = ((h / d) * 100).toFixed(2) + ' %';
+        }
+
+        function calculateLeveling() {
+            const p1 = parseFloat(document.getElementById('levelPoint1').value) || 0;
+            const p2 = parseFloat(document.getElementById('levelPoint2').value) || 0;
+            const diff = Math.abs(p2 - p1);
+            const sign = p2 > p1 ? '+' : '-';
+            document.getElementById('levelingResult').textContent = sign + diff.toFixed(3) + ' m';
+        }
+
+        function calculatePolygonArea() {
+            const text = document.getElementById('polygonPoints').value;
+            if (!text) { alert('Veuillez entrer les coordonnées'); return; }
+            const points = text.split(';').map(p => {
+                const m = p.match(/\s*\(?\s*([\d.-]+)\s*,\s*([\d.-]+)\s*\)?\s*/);
+                if (m) return { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+                return null;
+            }).filter(p => p !== null);
+            if (points.length < 3) { alert('Au moins 3 points requis'); return; }
+            let area = 0;
+            for (let i = 0; i < points.length; i++) {
+                const j = (i + 1) % points.length;
+                area += points[i].x * points[j].y - points[i].y * points[j].x;
+            }
+            area = Math.abs(area) / 2;
+            document.getElementById('polygonAreaResult').textContent = area.toFixed(2) + ' m²';
+        }
+
+        function convertUnits() {
+            const from = document.getElementById('convertFrom').value;
+            const to = document.getElementById('convertTo').value;
+            const value = parseFloat(document.getElementById('convertValue').value) || 0;
+            const rates = { m: 1, km: 1000, ft: 0.3048, yd: 0.9144, mi: 1609.34 };
+            const result = (value * rates[from]) / rates[to];
+            document.getElementById('conversionResult').textContent = result.toFixed(3);
+        }
+
+        function calculatePolarCoordinates() {
+            const baseLat = parseFloat(document.getElementById('polarBaseLat').value) || 0;
+            const baseLng = parseFloat(document.getElementById('polarBaseLng').value) || 0;
+            const distance = parseFloat(document.getElementById('polarDistance').value) || 0;
+            const angle = parseFloat(document.getElementById('polarAngle').value) || 0;
+            if (distance === 0) { alert('Veuillez entrer une distance'); return; }
+            const angleRad = angle * Math.PI / 180;
+            const earthRadius = 6371000;
+            const deltaLat = (distance * Math.cos(angleRad)) / earthRadius * (180 / Math.PI);
+            const deltaLng = (distance * Math.sin(angleRad)) / (earthRadius * Math.cos(baseLat * Math.PI / 180)) * (180 / Math.PI);
+            document.getElementById('polarResultLat').textContent = (baseLat + deltaLat).toFixed(6);
+            document.getElementById('polarResultLng').textContent = (baseLng + deltaLng).toFixed(6);
+        }
+
+        // Gestion des points
+        function showAddPointModal() {
+            document.getElementById('addPointModal').style.display = 'block';
+            const center = map.getCenter();
+            document.getElementById('pointLat').value = center.lat.toFixed(6);
+            document.getElementById('pointLng').value = center.lng.toFixed(6);
+        }
+
+        function closeAddPointModal() { document.getElementById('addPointModal').style.display = 'none'; }
+
+        function addPoint() {
+            const name = document.getElementById('pointName').value || 'Point ' + (points.length + 1);
+            const lat = parseFloat(document.getElementById('pointLat').value);
+            const lng = parseFloat(document.getElementById('pointLng').value);
+            const ele = parseFloat(document.getElementById('pointEle').value) || 0;
+            const desc = document.getElementById('pointDesc').value || '';
+            if (isNaN(lat) || isNaN(lng)) { alert('Coordonnées invalides'); return; }
+            const point = { id: Date.now(), name: name, lat: lat, lng: lng, ele: ele, desc: desc, timestamp: new Date().toISOString() };
+            points.push(point);
+            localStorage.setItem('geotopo-points', JSON.stringify(points));
+            const m = L.marker([lat, lng], { icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', iconSize: [24, 24], iconAnchor: [12, 24] }) }).addTo(drawnItems);
+            m.bindPopup('<b>' + name + '</b><br>Lat: ' + lat.toFixed(6) + '<br>Lng: ' + lng.toFixed(6) + '<br>Alt: ' + ele + ' m<br>' + desc);
+            closeAddPointModal();
+            updatePointsTable();
+            document.getElementById('pointName').value = '';
+            document.getElementById('pointDesc').value = '';
+        }
+
+        function loadPoints() {
+            const saved = localStorage.getItem('geotopo-points');
+            if (saved) {
+                points = JSON.parse(saved);
+                points.forEach(point => {
+                    const m = L.marker([point.lat, point.lng], { icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', iconSize: [24, 24], iconAnchor: [12, 24] }) }).addTo(drawnItems);
+                    m.bindPopup('<b>' + point.name + '</b><br>Lat: ' + point.lat.toFixed(6) + '<br>Lng: ' + point.lng.toFixed(6) + '<br>Alt: ' + point.ele + ' m<br>' + point.desc);
+                });
+                updatePointsTable();
+            }
+        }
+
+        function updatePointsTable() {
+            const tableBody = document.getElementById('pointsTable');
+            tableBody.innerHTML = '';
+            let totalEle = 0, visiblePoints = 0;
+            points.forEach((point, index) => {
+                const row = document.createElement('tr');
+                const bounds = map.getBounds();
+                const isVisible = bounds.contains([point.lat, point.lng]);
+                if (isVisible) visiblePoints++;
+                totalEle += point.ele;
+                row.innerHTML = '<td>' + (index + 1) + '</td><td>' + point.name + '</td><td>' + point.lat.toFixed(6) + '</td><td>' + point.lng.toFixed(6) + '</td><td>' + point.ele.toFixed(2) + '</td><td>' + point.desc + '</td><td><button class="btn-secondary" onclick="centerOnPoint(' + index + ')">&#128189;</button><button class="btn-danger" onclick="removePoint(' + index + ')">Supprimer</button></td>';
+                tableBody.appendChild(row);
+            });
+            document.getElementById('totalPoints').textContent = points.length;
+            document.getElementById('visiblePoints').textContent = visiblePoints;
+            document.getElementById('avgElevation').textContent = points.length > 0 ? (totalEle / points.length).toFixed(2) + ' m' : '0 m';
+        }
+
+        function centerOnPoint(index) { if (index >= 0 && index < points.length) map.setView([points[index].lat, points[index].lng], 15); }
+        function removePoint(index) { if (index >= 0 && index < points.length) { points.splice(index, 1); localStorage.setItem('geotopo-points', JSON.stringify(points)); drawnItems.clearLayers(); loadPoints(); } }
+        function clearAllPoints() { if (confirm('Supprimer tous les points?')) { points = []; localStorage.removeItem('geotopo-points'); drawnItems.clearLayers(); updatePointsTable(); } }
+
+        function exportPoints() {
+            if (points.length === 0) { alert('Aucun point à exporter'); return; }
+            let csv = 'ID,Nom,Latitude,Longitude,Altitude,Description,Date/Heure\n';
+            points.forEach((p, i) => { csv += (i+1) + ',"' + p.name + '",' + p.lat + ',' + p.lng + ',' + p.ele + ',"' + p.desc + '","' + p.timestamp + '"\n'; });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'points_topographiques_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+        }
+
+        function importPoints() {
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = '.csv';
+            input.onchange = function(e) {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result; const lines = content.split('\n');
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const values = lines[i].split(',');
+                        if (values.length >= 6) {
+                            const p = { id: Date.now() + i, name: values[1].replace(/["]/g, ''), lat: parseFloat(values[2]), lng: parseFloat(values[3]), ele: parseFloat(values[4]), desc: values[5].replace(/["]/g, ''), timestamp: values[6] ? values[6].replace(/["]/g, '') : new Date().toISOString() };
+                            points.push(p);
+                            const m = L.marker([p.lat, p.lng], { icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', iconSize: [24, 24], iconAnchor: [12, 24] }) }).addTo(drawnItems);
+                            m.bindPopup('<b>' + p.name + '</b><br>Lat: ' + p.lat.toFixed(6) + '<br>Lng: ' + p.lng.toFixed(6) + '<br>Alt: ' + p.ele + ' m<br>' + p.desc);
+                        }
+                    }
+                    localStorage.setItem('geotopo-points', JSON.stringify(points)); updatePointsTable();
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Panorama
+        function initPeakFinder() {
+            panel = new PeakFinder.PanoramaPanel({ canvasid: "pfcanvas", locale: "en" });
+            panel.init(() => { isReady = true; panel.settings.showSun(1); panel.settings.showMoon(1); panel.settings.showGrid(1); document.getElementById('pfcanvasprogress').style.display = 'none'; });
+        }
+
+        function updatePanorama() {
+            if (!isReady) { setTimeout(updatePanorama, 1000); return; }
+            const dateStr = document.getElementById('panoDate').value;
+            const timeStr = document.getElementById('panoTime').value;
+            const lat = parseFloat(document.getElementById('astroLat').value) || 36.20534;
+            const lng = parseFloat(document.getElementById('astroLng').value) || 5.41173;
+            if (dateStr && timeStr) { const date = new Date(dateStr + 'T' + timeStr + ':00Z'); panel.setDate(date); panel.setLocation(lat, lng); }
+        }
+
+        function toggleSunMoon() { if (!isReady) return; panel.settings.showSun(panel.settings.showSun() ? 0 : 1); panel.settings.showMoon(panel.settings.showMoon() ? 0 : 1); }
+        function toggleGrid() { if (!isReady) return; panel.settings.showGrid(panel.settings.showGrid() ? 0 : 1); }
+
+        // Astronomie
+        function updateAstroInfo() {
+            const dateStr = document.getElementById('astroDate').value;
+            const lat = parseFloat(document.getElementById('astroLat').value) || 36.20534;
+            const lng = parseFloat(document.getElementById('astroLng').value) || 5.41173;
+            if (!dateStr) { alert('Sélectionnez une date'); return; }
+            const date = new Date(dateStr);
+            const times = SunCalc.getTimes(date, lat, lng);
+            const moonTimes = SunCalc.getMoonTimes(date, lat, lng);
+            const moonPos = SunCalc.getMoonPosition(date, lat, lng);
+            const moonPhase = SunCalc.getMoonPhase(date);
+            const moonIllum = SunCalc.getMoonIllumination(date);
+            document.getElementById('sunriseTime').textContent = formatTime(times.sunrise);
+            document.getElementById('sunsetTime').textContent = formatTime(times.sunset);
+            document.getElementById('moonriseTime').textContent = moonTimes.rise ? formatTime(moonTimes.rise) : 'N/A';
+            document.getElementById('moonsetTime').textContent = moonTimes.set ? formatTime(moonTimes.set) : 'N/A';
+            const ageDays = moonPhase * 29.53;
+            document.getElementById('moonAge').textContent = ageDays.toFixed(1) + ' jours';
+            const phaseNames = ['Nouvelle Lune', 'Premier Croissant', 'Premier Quartier', 'Lune Gibbeuse', 'Pleine Lune', 'Lune Gibbeuse', 'Dernier Quartier', 'Dernier Croissant'];
+            const phaseIndex = Math.floor((moonPhase + 0.03) * 8) % 8;
+            document.getElementById('moonPhase').textContent = phaseNames[phaseIndex];
+            document.getElementById('moonIllumination').textContent = (moonIllum.fraction * 100).toFixed(1);
+            document.getElementById('moonAzimuth').textContent = (moonPos.azimuth * 180 / Math.PI).toFixed(1);
+            updateVisibilityInfo(date, lat, lng, moonPhase, moonIllum, moonPos);
+        }
+
+        function useCurrentPosition() {
+            const lat = document.getElementById('currentLat').textContent;
+            const lng = document.getElementById('currentLng').textContent;
+            document.getElementById('astroLat').value = parseFloat(lat).toFixed(6);
+            document.getElementById('astroLng').value = parseFloat(lng).toFixed(6);
+            updateAstroInfo();
+        }
+
+        function formatTime(date) { if (!date) return 'N/A'; return date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0'); }
+
+        function updateVisibilityInfo(date, lat, lng, moonPhase, moonIllum, moonPos) {
+            const ageDays = moonPhase * 29.530588853;
+            let visibility = '';
+            if (ageDays < 1) visibility = '<div style="color: var(--danger); font-weight: 600;">Croissant non visible - Nouvelle Lune</div>';
+            else if (ageDays < 2) visibility = '<div style="color: var(--warning); font-weight: 600;">Visibilité difficile - Croissant très fin</div>';
+            else if (ageDays < 3) visibility = '<div style="color: var(--success); font-weight: 600;">Bonne visibilité - Croissant visible à lœil nu</div>';
+            else if (ageDays < 7) visibility = '<div style="color: var(--success); font-weight: 600;">Excellente visibilité</div>';
+            else if (ageDays < 14) visibility = '<div style="color: var(--success); font-weight: 600;">Lune visible en première moitié de nuit</div>';
+            else if (ageDays < 16) visibility = '<div style="color: var(--success); font-weight: 600;">Lune visible en deuxième moitié de nuit</div>';
+            else if (ageDays < 27) visibility = '<div style="color: var(--warning); font-weight: 600;">Dernier quartier - Visibilité matinale</div>';
+            else visibility = '<div style="color: var(--danger); font-weight: 600;">Croissant difficile - Fin de cycle</div>';
+            visibility += '<p class="mt-10">Age: ' + ageDays.toFixed(2) + ' jours | Illumination: ' + (moonIllum.fraction * 100).toFixed(1) + '%</p>';
+            document.getElementById('visibilityInfo').innerHTML = visibility;
+        }
+
+        // Navigation
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            if (tabName === 'panorama' && isReady) updatePanorama();
+        }
+
+        // Langue
+        function toggleLangDropdown() { document.getElementById('langDropdown').classList.toggle('show'); }
+        function changeLanguage(lang) { 
+            currentLang = lang; 
+            const flag = document.getElementById('currentLangFlag'); 
+            const text = document.getElementById('currentLangText'); 
+            if (lang === 'fr') { flag.textContent = '🇫🇷'; text.textContent = 'Français'; } 
+            else if (lang === 'en') { flag.textContent = '🇬🇧'; text.textContent = 'English'; } 
+            else if (lang === 'ar') { flag.textContent = '🇲🇦'; text.textContent = 'العربية'; } 
+            document.getElementById('langDropdown').classList.remove('show'); 
+        }
+
+        // Utilitaires
+        function exportData() { alert('Fonction export à implémenter'); }
+        function importData() { alert('Fonction import à implémenter'); }
+        function printPage() { window.print(); }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('aboutModal')) document.getElementById('aboutModal').style.display = 'none';
+            if (event.target == document.getElementById('addPointModal')) closeAddPointModal();
+        }
+    </script>
+</body>
+</html>
