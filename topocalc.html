@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TopoCalc – Calculs de topographie</title>
+<style>
+:root{
+  --bg:#0f1420; --panel:#171e2e; --panel2:#1e2740; --line:#2c3854; --txt:#e8edf6; --muted:#93a0b8; --acc:#38bdf8; --ok:#34d399; --bad:#f87171; --warn:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+header{background:linear-gradient(135deg,#101828,#1a2440);padding:16px 24px;border-bottom:2px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+header h1{font-size:1.25rem;letter-spacing:.5px}
+header h1 span{color:var(--acc)}
+.badge{color:var(--muted);font-size:.8rem}
+nav{display:flex;flex-wrap:wrap;gap:6px;padding:10px 24px 0;background:#101828}
+nav button{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-bottom:none;padding:10px 18px;border-radius:8px 8px 0 0;cursor:pointer;font-size:.95rem}
+nav button.active{background:var(--bg);color:var(--acc);border-color:var(--acc);font-weight:600}
+main{padding:20px 24px 60px;max-width:1200px;margin:0 auto}
+.tab{display:none}
+.tab.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font-size:1rem;color:var(--acc);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+label{display:block;font-size:.78rem;color:var(--muted);margin:8px 0 3px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);padding:8px 10px;border-radius:6px;font-size:.95rem}
+input:focus,select:focus{outline:none;border-color:var(--acc)}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+button.act{background:var(--acc);color:#04293c;font-weight:700;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;margin-top:12px;font-size:.95rem}
+button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line);padding:8px 14px;border-radius:8px;cursor:pointer;margin-top:12px}
+button.del{background:transparent;border:none;color:var(--bad);cursor:pointer;font-size:1rem;padding:6px}
+.result{margin-top:12px;padding:12px;background:var(--panel2);border-radius:8px;font-family:Consolas,monospace;font-size:.9rem;white-space:pre-wrap;border-left:3px solid var(--ok);overflow-x:auto;line-height:1.5}
+.result.err{border-left-color:var(--bad)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.88rem}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:center}
+th{background:var(--panel2);color:var(--muted);font-weight:600}
+td input{padding:4px 6px;text-align:center}
+.summary{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.pill{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:.85rem}
+.pill b{color:var(--acc)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.help p{margin:8px 0;color:var(--muted);font-size:.92rem;line-height:1.6}
+.help code{background:var(--panel2);padding:2px 6px;border-radius:4px;color:var(--acc);font-size:.85rem}
+.help h3{color:var(--txt);margin:16px 0 4px;font-size:1rem}
+@media print{header,nav,button{display:none!important}body{background:#fff;color:#000}.card{border-color:#999}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#128506; Topo<span>Calc</span> — Calculs de topographie</h1>
+  <div>
+    <label style="display:inline-block;margin:0 8px 0 0">Unité d'angle</label>
+    <select id="angleUnit" style="width:auto" onchange="setUnit(this.value)">
+      <option value="gon" selected>grades (gon)</option>
+      <option value="deg">degrés (°)</option>
+    </select>
+  </div>
+</header>
+
+<nav>
+  <button class="active" data-tab="ch" onclick="showTab('ch',this)">&#10148; Cheminements</button>
+  <button data-tab="base" onclick="showTab('base',this)">&#10135; Calculs de base</button>
+  <button data-tab="niv" onclick="showTab('niv',this)">&#128201; Nivellement</button>
+  <button data-tab="surf" onclick="showTab('surf',this)">&#9638; Surfaces</button>
+  <button data-tab="help" onclick="showTab('help',this)">&#8505; Méthodes &amp; aide</button>
+</nav>
+
+<main>
+
+<section id="tab-ch" class="tab active">
+  <div class="grid">
+    <div class="card" style="grid-column:1/-1">
+      <h2>&#10148; Cheminement / polygonale</h2>
+      <div class="row">
+        <div>
+          <label>Type de cheminement</label>
+          <select id="chMode" onchange="onChMode()">
+            <option value="fermee">Polygonale fermée (retour au point de départ)</option>
+            <option value="encadree">Cheminement encadré (2 stations connues + 2 gisements)</option>
+            <option value="coupure">Coupure libre (rattachement partiel)</option>
+          </select>
+        </div>
+        <div>
+          <label>Sens des angles mesurés</label>
+          <select id="chSens">
+            <option value="d">À droite (horaire)</option>
+            <option value="g">À gauche (anti-horaire)</option>
+          </select>
+        </div>
+        <div>
+          <label>Méthode de compensation planimétrique</label>
+          <select id="chComp">
+            <option value="bowditch">Bowditch (proportionnel aux distances)</option>
+            <option value="transit">Transit (proportionnel aux |ΔX|, |ΔY|)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <div><label>Station de départ — nom</label><input id="chAname" value="A"></div>
+        <div><label>X départ (Est)</label><input id="chAx" type="number" step="0.001" value="1000.000"></div>
+        <div><label>Y départ (Nord)</label><input id="chAy" type="number" step="0.001" value="1000.000"></div>
+        <div><label>Gisement de la 1<sup>re</sup> liaison (départ → 1<sup>re</sup> visée)</label><input id="chG0" type="number" step="0.0001"></div>
+      </div>
+
+      <div id="chEncadreeFields" class="row" style="margin-top:8px;display:none">
+        <div><label>Station d'arrivée — nom</label><input id="chBname" value="B"></div>
+        <div><label>X arrivée (Est)</label><input id="chBx" type="number" step="0.001"></div>
+        <div><label>Y arrivée (Nord)</label><input id="chBy" type="number" step="0.001"></div>
+        <div><label>Gisement final connu (dernière liaison / visée de fermeture)</label><input id="chGf" type="number" step="0.0001"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap">
+        <button class="act" onclick="calcTraverse()" style="margin-top:0">&#10003; Calculer le cheminement</button>
+        <button class="sec" onclick="addChRow()" style="margin-top:0">&#10010; Ajouter une station</button>
+        <button class="sec" onclick="loadChExample()" style="margin-top:0">Charger un exemple</button>
+        <button class="sec" onclick="exportTraverseCSV()" style="margin-top:0">Exporter CSV</button>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table id="chTable">
+          <thead><tr>
+            <th>N°</th><th>Station</th><th>Angle horizontal</th><th>Distance (m)</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="badge" style="margin-top:6px">Angle à saisir à chaque station (sauf la 1<sup>re</sup>) entre la visée arrière et la visée avant. Pour une polygonale fermée, la dernière ligne est le retour au point de départ (angle de fermeture, distance ignorée).</p>
+
+      <div id="chReport"></div>
+      <div id="chTableOut"></div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-base" class="tab">
+  <div class="grid">
+    <div class="card">
+      <h2>&#10135; Problème direct (polaire)</h2>
+      <div class="row">
+        <div><label>X station (Est)</label><input id="pdX" type="number" step="0.001" value="1000.000"></div>
+        <div><label>Y station (Nord)</label><input id="pdY" type="number" step="0.001" value="2000.000"></div>
+      </div>
+      <div class="row">
+        <div><label>Gisement (vers le point)</label><input id="pdG" type="number" step="0.0001" value="123.4560"></div>
+        <div><label>Distance (m)</label><input id="pdD" type="number" step="0.001" value="250.000"></div>
+      </div>
+      <button class="act" onclick="calcDirect()">&#10003; Calculer</button>
+      <div id="pdRes" class="result" hidden></div>
+    </div>
+
+    <div class="card">
+      <h2>&#8596; Problème inverse (gisement / distance)</h2>
+      <div class="row">
+        <div><label>X A (Est)</label><input id="piXa" type="number" step="0.001" value="1000.000"></div>
+        <div><label>Y A (Nord)</label><input id="piYa" type="number" step="0.001" value="2000.000"></div>
+      </div>
+      <div class="row">
+        <div><label>X B (Est)</label><input id="piXb" type="number" step="0.001" value="1181.895"></div>
+        <div><label>Y B (Nord)</label><input id="piYb" type="number" step="0.001" value="1861.799"></div>
+      </div>
+      <button class="act" onclick="calcInverse()">&#10003; Calculer</button>
+      <div id="piRes" class="result" hidden></div>
+    </div>
+
+    <div class="card">
+      <h2>&#10093; Intersection (2 gisements)</h2>
+      <div class="row">
+        <div><label>X station A</label><input id="itXa" type="number" step="0.001" value="1000.000"></div>
+        <div><label>Y station A</label><input id="itYa" type="number" step="0.001" value="2000.000"></div>
+        <div><label>Gisement A→P</label><input id="itGa" type="number" step="0.0001" value="50.0000"></div>
+      </div>
+      <div class="row">
+        <div><label>X station B</label><input id="itXb" type="number" step="0.001" value="1500.000"></div>
+        <div><label>Y station B</label><input id="itYb" type="number" step="0.001" value="2000.000"></div>
+        <div><label>Gisement B→P</label><input id="itGb" type="number" step="0.0001" value="350.0000"></div>
+      </div>
+      <button class="act" onclick="calcIntersection()">&#10003; Calculer</button>
+      <div id="itRes" class="result" hidden></div>
+    </div>
+
+    <div class="card">
+      <h2>&#8736; Recoupement (2 angles)</h2>
+      <div class="row">
+        <div><label>X base A</label><input id="rcXa" type="number" step="0.001" value="1000.000"></div>
+        <div><label>Y base A</label><input id="rcYa" type="number" step="0.001" value="2000.000"></div>
+      </div>
+      <div class="row">
+        <div><label>X base B</label><input id="rcXb" type="number" step="0.001" value="1500.000"></div>
+        <div><label>Y base B</label><input id="rcYb" type="number" step="0.001" value="2000.000"></div>
+      </div>
+      <div class="row">
+        <div><label>Angle &alpha; à A (entre B et P, horaire)</label><input id="rcAlpha" type="number" step="0.0001" value="30.0000"></div>
+        <div><label>Angle &beta; à B (entre A et P, horaire)</label><input id="rcBeta" type="number" step="0.0001" value="30.0000"></div>
+      </div>
+      <button class="act" onclick="calcResection()">&#10003; Calculer</button>
+      <div id="rcRes" class="result" hidden></div>
+    </div>
+
+    <div class="card">
+      <h2>&#127919; Conversions d'angles</h2>
+      <label>Valeur décimale</label>
+      <div class="row">
+        <div><input id="cvVal" type="number" step="0.00000001" value="123.4567" oninput="convertAngle()"></div>
+        <div style="max-width:130px"><select id="cvFrom" onchange="convertAngle()">
+          <option value="gon">gon</option><option value="deg">degrés</option><option value="rad">radians</option>
+        </select></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>en grades</label><input id="cvGon" readonly></div>
+        <div><label>en degrés</label><input id="cvDeg" readonly></div>
+        <div><label>en radians</label><input id="cvRad" readonly></div>
+      </div>
+      <div class="row">
+        <div><label>Sexagésimal (° ' &quot;)</label><input id="cvDms" readonly></div>
+        <div><label>Grad sexagésimal (g c)</label><input id="cvGms" readonly></div>
+      </div>
+      <hr style="border-color:var(--line);margin:12px 0">
+      <label>Sexagésimal → décimal (exemple : 123°27'24.12&quot;)</label>
+      <div class="row">
+        <div><input id="cvDmsIn" placeholder="123 27 24.12" oninput="dmsToDecimal()"></div>
+        <div style="max-width:130px"><select id="cvDmsUnit" onchange="dmsToDecimal()">
+          <option value="deg">degrés</option><option value="gon">grades</option>
+        </select></div>
+        <div><input id="cvDmsOut" readonly placeholder="décimal"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>&#128207; Divers</h2>
+      <label>Déclinaison : longueur pente ↔ distance horizontale</label>
+      <div class="row">
+        <div><label>Distance pente (m)</label><input id="slD" type="number" step="0.001" value="100.000"></div>
+        <div><label>Pente (%) ou angle</label><input id="slP" type="number" step="0.0001" value="5"></div>
+        <div style="max-width:130px"><select id="slMode" onchange="null">
+          <option value="pct">% pente</option><option value="ang">angle (unité courante)</option>
+        </select></div>
+      </div>
+      <button class="act" onclick="calcSlopeDist()">&#10003; Convertir</button>
+      <div id="slRes" class="result" hidden></div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-niv" class="tab">
+  <div class="grid">
+    <div class="card" style="grid-column:1/-1">
+      <h2>&#128201; Nivellement direct (cheminement altimétrique)</h2>
+      <div class="row">
+        <div><label>Point de départ — nom</label><input id="nvAname" value="BM1"></div>
+        <div><label>Altitude de départ (m)</label><input id="nvH0" type="number" step="0.001" value="120.000"></div>
+        <div id="nvEndWrap"><label>Altitude d'arrivée connue (rattachement) — vide = boucle fermée</label><input id="nvHf" type="number" step="0.001" placeholder="ex. 120.000"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+        <button class="act" onclick="calcLeveling()" style="margin-top:0">&#10003; Calculer</button>
+        <button class="sec" onclick="addNvRow()" style="margin-top:0">&#10010; Ajouter une station</button>
+        <button class="sec" onclick="loadNvExample()" style="margin-top:0">Charger un exemple</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="nvTable">
+          <thead><tr>
+            <th>N°</th><th>Point / station</th><th>Lecture arrière AR (m)</th><th>Lecture avant AV (m)</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="badge" style="margin-top:6px">Δh par cheminement partiel = AR − AV. La fermeture est répartie proportionnellement au nombre de cheminements partiels.</p>
+      <div id="nvReport"></div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-surf" class="tab">
+  <div class="grid">
+    <div class="card" style="grid-column:1/-1">
+      <h2>&#9638; Surface &amp; périmètre d'une parcelle (méthode de Gauss)</h2>
+      <p class="badge">Saisir les sommets dans l'ordre de rotation (sens direct ou rétrograde). X = Est, Y = Nord.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="act" onclick="calcArea()" style="margin-top:0">&#10003; Calculer surface</button>
+        <button class="sec" onclick="addSurfRow()" style="margin-top:0">&#10010; Ajouter un sommet</button>
+        <button class="sec" onclick="loadSurfExample()" style="margin-top:0">Charger un exemple</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="surfTable">
+          <thead><tr><th>N°</th><th>Sommet</th><th>X (Est)</th><th>Y (Nord)</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="surfReport"></div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-help" class="tab">
+  <div class="card help">
+    <h2>&#8505; Méthodes, formules et conventions</h2>
+
+    <h3>Conventions</h3>
+    <p>&bull; <b>X = Est</b>, <b>Y = Nord</b> : ΔX = d·sin(G), ΔY = d·cos(G).</p>
+    <p>&bull; Gisement : angle horaire compté depuis le Nord (Y), croissant de 0 à 400 gon (360°).</p>
+    <p>&bull; Toutes les distances sont supposées horizontales. Les angles saisis sont horizontaux.</p>
+    <p>&bull; Unité par défaut : le grade (gon). Modifiable en haut de page ; toutes les saisies s'interprètent alors en degrés.</p>
+
+    <h3>Gisement et problème direct/inverse</h3>
+    <p>G<sub>AB</sub> = atan2(ΔX, ΔY) ; d<sub>AB</sub> = √(ΔX² + ΔY²). Problème direct : X<sub>B</sub> = X<sub>A</sub> + d·sin(G), Y<sub>B</sub> = Y<sub>A</sub> + d·cos(G).</p>
+
+    <h3>Cheminement d'ensemble (polygonale)</h3>
+    <p> Angle à droite : G<sub>i</sub> = G<sub>i−1</sub> + 200 + α<sub>i</sub> (gon) ; angle à gauche : G<sub>i</sub> = G<sub>i−1</sub> + 200 − α<sub>i</sub>.</p>
+    <p><b>Fermée</b> : Σα devrait valoir (n−2)×200 gon (angles à droite, n sommets) ; l'écart w est réparti également sur tous les angles.</p>
+    <p><b>Encadrée</b> : w = G<sub>final calculé</sub> − G<sub>final connu</sub>, réparti sur le nombre d'angles.</p>
+    <p>Fermeture planimétrique : f<sub>a</sub> = √(fx² + fy²) ; précision = Σd / f<sub>a</sub> (1/ …).</p>
+    <p><b>Bowditch</b> : correction ΔX<sub>i</sub> = −fx·d<sub>i</sub>/Σd (idem ΔY) ; <b>Transit</b> : correction ΔX<sub>i</sub> = −fx·|ΔX<sub>i</sub>|/Σ|ΔX|.</p>
+
+    <h3>Intersection – recoupement</h3>
+    <p>Intersection : résolution de P = A + t·u<sub>Ga</sub> (droites par gisements depuis 2 stations connues).</p>
+    <p>Recoupement : angles α (à A, entre la base AB et AP) et β (à B, entre BA et BP, horaires) ; G<sub>AP</sub> = G<sub>AB</sub> + α, G<sub>BP</sub> = G<sub>BA</sub> − β, puis intersection des deux directions.</p>
+
+    <h3>Nivellement direct</h3>
+    <p>Δh = AR − AV pour chaque cheminement partiel ; altitude cumulée station par station ; la fermeture est corrigée proportionnellement au nombre de cheminements.</p>
+
+    <h3>Surface (Gauss)</h3>
+    <p>S = ½ · |Σ (X<sub>i</sub>·Y<sub>i+1</sub> − X<sub>i+1</sub>·Y<sub>i</sub>)| ; centroïde par la formule classique du polygone.</p>
+
+    <h3>Utilisation terrain / bureau</h3>
+    <p>Fichier unique sans connexion internet ni installation ; export CSV des résultats ; impression du rapport (Ctrl+P). Les saisies restent en mémoire pendant la session.</p>
+  </div>
+</section>
+
+</main>
+
+<script id="core-js">
+const FULL = { gon: 400, deg: 360 };
+const HALF = { gon: 200, deg: 180 };
+let UNIT = 'gon';
+
+function setUnit(u){ UNIT = u; }
+
+function toRad(a){ return a * Math.PI / (UNIT === 'gon' ? 200 : 180); }
+function full(){ return FULL[UNIT]; }
+function half(){ return HALF[UNIT]; }
+function norm(a){ const F = full(); let x = a % F; if (x < 0) x += F; return x; }
+function sinG(g){ return Math.sin(toRad(g)); }
+function cosG(g){ return Math.cos(toRad(g)); }
+
+function gisementOf(dx, dy){
+  const a = Math.atan2(dx, dy) * (UNIT === 'gon' ? 200 : 180) / Math.PI;
+  return norm(a);
+}
+
+function polarShooting(x, y, g, d){
+  return { x: x + d * sinG(g), y: y + d * cosG(g) };
+}
+
+function inverse(xa, ya, xb, yb){
+  const dx = xb - xa, dy = yb - ya;
+  return { g: gisementOf(dx, dy), d: Math.hypot(dx, dy), dx, dy };
+}
+
+function intersectionLines(xa, ya, ga, xb, yb, gb){
+  const p = { x: xa + sinG(ga), y: ya + cosG(ga) };
+  const q = { x: xb + sinG(gb), y: yb + cosG(gb) };
+  const dx1 = p.x - xa, dy1 = p.y - ya;
+  const dx2 = q.x - xb, dy2 = q.y - yb;
+  const det = dx1 * (-dy2) - dy1 * (-dx2);
+  if (Math.abs(det) < 1e-12) return null;
+  const t = ((xb - xa) * (-dy2) - (yb - ya) * (-dx2)) / det;
+  return { x: xa + t * dx1, y: ya + t * dy1 };
+}
+
+function resection(xa, ya, xb, yb, alpha, beta){
+  const gab = inverse(xa, ya, xb, yb).g;
+  const gba = inverse(xb, yb, xa, ya).g;
+  const gap = norm(gab + alpha);
+  const gbp = norm(gba - beta);
+  return intersectionLines(xa, ya, gap, xb, yb, gbp);
+}
+
+function dmsToDec(v, unit){
+  const sign = v.trim().startsWith('-') ? -1 : 1;
+  const parts = v.replace('-', '').trim().split(/\s+/).map(parseFloat);
+  let dec = 0;
+  if (unit === 'gon') dec = (parts[0] || 0) + (parts[1] || 0) / 100 + (parts[2] || 0) / 10000;
+  else dec = (parts[0] || 0) + (parts[1] || 0) / 60 + (parts[2] || 0) / 3600;
+  return sign * dec;
+}
+
+function decToDms(dec, unit){
+  const sign = dec < 0 ? '-' : '';
+  dec = Math.abs(dec);
+  const deg = Math.floor(dec);
+  let rem = dec - deg;
+  const min = Math.floor(rem * (unit === 'gon' ? 100 : 60));
+  rem = rem * (unit === 'gon' ? 100 : 60) - min;
+  const sec = rem * (unit === 'gon' ? 100 : 60);
+  return `${sign}${deg}° ${String(min).padStart(2, '0')}' ${sec.toFixed(2)}"`;
+}
+
+function buildTraverse(cfg){
+  const H = half(), F = full();
+  const sens = cfg.sens === 'g' ? -1 : 1;
+  const rows = cfg.rows.map(r => ({
+    name: r.name,
+    angle: r.angle !== '' ? (sens === -1 ? norm(F - r.angle) : r.angle) : null,
+    dist: r.dist !== '' ? r.dist : null
+  }));
+
+  const m = rows.length;
+  const legs = m - 1;
+  const gisements = new Array(m).fill(null);
+  gisements[0] = cfg.g0;
+  for (let i = 1; i < m; i++){
+    gisements[i] = norm(gisements[i - 1] + H + rows[i].angle);
+  }
+
+  let w = 0, nAngles = 0;
+  if (cfg.mode === 'fermee'){
+    w = norm(gisements[m - 1] - cfg.g0);
+    if (w > H) w -= F;
+    nAngles = m - 1;
+  } else if (cfg.mode === 'encadree'){
+    w = norm(gisements[m - 1] - cfg.gf);
+    if (w > H) w -= F;
+    nAngles = m - 1;
+  } else {
+    if (cfg.gf != null) {
+      w = norm(gisements[m - 1] - cfg.gf);
+      if (w > H) w -= F;
+      nAngles = 0;
+    }
+  }
+
+  const corrPerAngle = nAngles > 0 ? -w / nAngles : 0;
+  const anglesCorr = rows.map((r, i) => (r.angle == null ? null : rows[i].angle + corrPerAngle));
+  const gCorr = new Array(m).fill(null);
+  gCorr[0] = cfg.g0;
+  for (let i = 1; i < m; i++){
+    gCorr[i] = norm(gCorr[i - 1] + H + anglesCorr[i]);
+  }
+
+  const incs = [];
+  for (let i = 0; i < legs; i++){
+    const d = rows[i].dist || 0;
+    incs.push({ dx: d * sinG(gCorr[i]), dy: d * cosG(gCorr[i]), d });
+  }
+
+  let fx = 0, fy = 0, sumD = 0;
+  incs.forEach(s => { fx += s.dx; fy += s.dy; sumD += s.d; });
+  if (cfg.mode === 'encadree' && cfg.bx != null){
+    fx -= cfg.bx - cfg.ax;
+    fy -= cfg.by - cfg.ay;
+  }
+  const fa = Math.hypot(fx, fy);
+
+  const sumAbsX = incs.reduce((a, s) => a + Math.abs(s.dx), 0) || 1e-12;
+  const sumAbsY = incs.reduce((a, s) => a + Math.abs(s.dy), 0) || 1e-12;
+
+  const corr = incs.map((s, i) => {
+    if (cfg.mode === 'coupure' || sumD <= 0) return { cx: 0, cy: 0 };
+    if (cfg.comp === 'transit'){
+      return { cx: -fx * Math.abs(s.dx) / sumAbsX, cy: -fy * Math.abs(s.dy) / sumAbsY };
+    }
+    return { cx: -fx * s.d / sumD, cy: -fy * s.d / sumD };
+  });
+
+  const points = [{ name: rows[0].name, x: cfg.ax, y: cfg.ay, x0: cfg.ax, y0: cfg.ay }];
+  let cx = cfg.ax, cy = cfg.ay;
+  for (let i = 0; i < legs; i++){
+    cx += incs[i].dx + corr[i].cx;
+    cy += incs[i].dy + corr[i].cy;
+    points.push({ name: rows[i + 1].name, x: cx, y: cy, x0: cx - corr[i].cx, y0: cy - corr[i].cy });
+  }
+
+  const theoSum = cfg.mode === 'fermee' ? (m - 2) * H : null;
+  const sumAngles = rows.slice(1).reduce((a, r) => a + (r.angle || 0), 0);
+
+  return {
+    rows, gisements, gCorr: gCorr.slice(0, legs), anglesCorr, incs, corr,
+    m, points, w, nAngles, fa, fx, fy, sumD, sumAngles, theoSum,
+    precision: fa > 0 ? sumD / fa : Infinity,
+    mode: cfg.mode, sens: cfg.sens, comp: cfg.comp,
+    stationEnd: { x: cx, y: cy }
+  };
+}
+
+function gaussArea(pts){
+  const n = pts.length;
+  let s = 0, cx = 0, cy = 0;
+  for (let i = 0; i < n; i++){
+    const a = pts[i], b = pts[(i + 1) % n];
+    const cross = a.x * b.y - b.x * a.y;
+    s += cross;
+    cx += (a.x + b.x) * cross;
+    cy += (a.y + b.y) * cross;
+  }
+  const area = Math.abs(s) / 2;
+  const perim = pts.reduce((p, a, i) => p + Math.hypot(pts[(i + 1) % n].x - a.x, pts[(i + 1) % n].y - a.y), 0);
+  return {
+    area, perim,
+    centroid: area > 1e-12 ? { x: cx / (3 * s), y: cy / (3 * s) } : null
+  };
+}
+
+function levelingLoop(h0, hf, rows){
+  const steps = rows.map(r => ({ name: r.name, dh: (r.ar || 0) - (r.av || 0), ar: r.ar || 0, av: r.av || 0 }));
+  const n = steps.length;
+  const rawFinal = h0 + steps.reduce((a, s) => a + s.dh, 0);
+  const closure = hf == null || hf === '' ? rawFinal - h0 : rawFinal - hf;
+  const corr = n > 0 ? -closure / n : 0;
+  let h = h0, sumCorr = 0;
+  const out = [{ name: rows[0] ? rows[0].name : '', h: h0, corr: 0 }];
+  steps.forEach((s, i) => {
+    h += s.dh + corr;
+    sumCorr += corr;
+    out.push({ name: s.name || `Station ${i + 2}`, h, corr: sumCorr, dh: s.dh, dhCorr: s.dh + corr });
+  });
+  return { steps, n, rawFinal, closure, corrPerStep: corr, heights: out, compensatedFinal: h };
+}
+</script>
+
+<script>
+function showTab(id, btn){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function n(v, dec){
+  return v == null || !isFinite(v) ? '--' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function renderResult(el, html, isErr){
+  el.hidden = false;
+  el.classList.toggle('err', !!isErr);
+  el.innerHTML = html;
+}
+
+function f4(v){ return n(v, 4); }
+function f3(v){ return n(v, 3); }
+
+function calcDirect(){
+  const r = polarShooting(+pdX.value, +pdY.value, +pdG.value, +pdD.value);
+  renderResult(pdRes, `X = ${f3(r.x)} m\nY = ${f3(r.y)} m`);
+}
+
+function calcInverse(){
+  const r = inverse(+piXa.value, +piYa.value, +piXb.value, +piYb.value);
+  renderResult(piRes, `ΔX = ${f3(r.dx)} m\nΔY = ${f3(r.dy)} m\nGisement A→B = ${f4(r.g)} ${UNIT}\nDistance = ${f3(r.d)} m`);
+}
+
+function calcIntersection(){
+  const r = intersectionLines(+itXa.value, +itYa.value, +itGa.value, +itXb.value, +itYb.value, +itGb.value);
+  if (!r){ renderResult(itRes, 'Directions parallèles : pas d\'intersection.', true); return; }
+  renderResult(itRes, `X = ${f3(r.x)} m\nY = ${f3(r.y)} m\nGAP = ${f3(inverse(+itXa.value, +itYa.value, r.x, r.y).d)} m\nGBP = ${f3(inverse(+itXb.value, +itYb.value, r.x, r.y).d)} m`);
+}
+
+function calcResection(){
+  const r = resection(+rcXa.value, +rcYa.value, +rcXb.value, +rcYb.value, +rcAlpha.value, +rcBeta.value);
+  if (!r){ renderResult(rcRes, 'Angles invalides (directions parallèles).', true); return; }
+  renderResult(rcRes, `X = ${f3(r.x)} m\nY = ${f3(r.y)} m`);
+}
+
+function convertAngle(){
+  const v = +cvVal.value;
+  const toDeg = v * { gon: 0.9, deg: 1, rad: 180 / Math.PI }[cvFrom.value];
+  cvGon.value = (toDeg / 0.9).toFixed(6);
+  cvDeg.value = toDeg.toFixed(6);
+  cvRad.value = (toDeg * Math.PI / 180).toFixed(8);
+  cvDms.value = decToDms(toDeg, 'deg');
+  cvGms.value = decToDms(toDeg / 0.9, 'gon');
+}
+
+function dmsToDecimal(){
+  cvDmsOut.value = cvDmsIn.value.trim() === '' ? '' : dmsToDec(cvDmsIn.value, cvDmsUnit.value).toFixed(6);
+}
+
+function calcSlopeDist(){
+  const d = +slD.value, p = +slP.value;
+  let ang;
+  if (slMode.value === 'pct') ang = Math.atan(p / 100) * (UNIT === 'gon' ? 200 : 180) / Math.PI;
+  else ang = p;
+  const dh = d * sinG(ang);
+  renderResult(slRes, `Angle = ${f4(ang)} ${UNIT}\nDénivelée = ${f3(dh)} m\nDistance horizontale = ${f3(d * cosG(ang))} m`);
+}
+
+</script>
+
+<script>
+const chBody = document.querySelector('#chTable tbody');
+function chRowCount(){ return chBody.rows.length; }
+
+function onChMode(){
+  document.getElementById('chEncadreeFields').style.display = chMode.value === 'encadree' ? 'flex' : 'none';
+}
+
+function addChRow(name, angle, dist){
+  const i = chRowCount() + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${i}</td>
+    <td><input class="chName" value="${name != null ? name : 'S' + i}"></td>
+    <td><input class="chAngle" type="number" step="0.0001" value="${angle != null ? angle : ''}"></td>
+    <td><input class="chDist" type="number" step="0.001" value="${dist != null ? dist : ''}"></td>
+    <td><button class="del" onclick="this.closest('tr').remove();renumber(chBody)">&#10005;</button></td>`;
+  chBody.appendChild(tr);
+}
+
+function renumber(body){
+  [...body.rows].forEach((r, i) => r.cells[0].textContent = i + 1);
+}
+
+function getChRows(){
+  return [...chBody.rows].map((r, i) => ({
+    name: r.querySelector('.chName').value.trim() || `S${i + 1}`,
+    angle: r.querySelector('.chAngle').value,
+    dist: r.querySelector('.chDist').value
+  }));
+}
+
+let lastTraverse = null;
+
+function calcTraverse(){
+  const mode = chMode.value;
+  const cfg = {
+    mode,
+    sens: chSens.value,
+    comp: chComp.value,
+    ax: +chAx.value, ay: +chAy.value,
+    bx: +chBx.value, by: +chBy.value,
+    g0: +chG0.value,
+    gf: (mode === 'encadree' || mode === 'coupure') && chGf.value !== '' ? +chGf.value : null,
+    rows: getChRows()
+  };
+  if (cfg.rows.length < 3){ renderResult(chReport, 'Au moins 3 stations sont nécessaires.', true); return; }
+  if (cfg.rows.some((r, i) => i > 0 && r.angle === '')){ renderResult(chReport, 'Chaque station (sauf la première) doit avoir un angle.', true); return; }
+  if (cfg.rows.some(r => r.angle === null)){ renderResult(chReport, 'Erreur de saisie des angles.', true); return; }
+  if (mode === 'encadree' && (chBx.value === '' || chBy.value === '' || chGf.value === '')){ renderResult(chReport, 'Renseigner la station d\'arrivée et le gisement final.', true); return; }
+
+  const res = buildTraverse(cfg);
+  lastTraverse = { cfg, res };
+
+  let html = '';
+  html += `<div class="summary">`;
+  if (res.w != null && (mode !== 'coupure' || cfg.gf != null)){
+    const closeOk = Math.abs(res.w) <= (UNIT === 'gon' ? 1 : 0.9);
+    html += `<div class="pill">Fermeture angulaire w = <b class="${closeOk ? 'ok' : 'bad'}">${f4(res.w)} ${UNIT}</b> répartie sur ${res.nAngles} angle(s)</div>`;
+  } else {
+    html += `<div class="pill warn">Coupure libre : aucun contrôle de fermeture angulaire</div>`;
+  }
+  if (mode === 'fermee'){
+    html += `<div class="pill">Σ angles = <b>${f4(res.sumAngles)} ${UNIT}</b> — théorique ${f4(res.theoSum)} ${UNIT} (mod ${UNIT === 'gon' ? 400 : 360}) pour ${res.rows.length - 1} sommets)</div>`;
+    html += `<div class="pill">Fermeture plani : fx = <b>${f3(res.fx)}</b> m, fy = <b>${f3(res.fy)}</b> m, f<sub>a</sub> = <b>${f3(res.fa)}</b> m</div>`;
+    html += `<div class="pill">Précision : <b>${res.fa > 0 ? '1 / ' + n(res.precision, 0) : 'parfaite (≈0)'}</b></div>`;
+  } else if (mode === 'encadree'){
+    html += `<div class="pill">Fermeture plani : fx = <b>${f3(res.fx)}</b> m, fy = <b>${f3(res.fy)}</b> m, f<sub>a</sub> = <b>${f3(res.fa)}</b> m — précision : <b>${res.fa > 1e-9 ? '1 / ' + n(res.precision, 0) : 'parfaite (≈0)'}</b></div>`;
+    html += `<div class="pill">Station d'arrivée recalée sur le point connu (${chBx.value}, ${chBy.value})</div>`;
+  }
+  html += `</div>`;
+  renderResult(chReport, html);
+
+  let t = `<div style="overflow-x:auto"><table><thead><tr>
+    <th>Station</th><th>Angle ${UNIT} (compensé)</th><th>Gisement ${UNIT}</th><th>Distance m</th>
+    <th>ΔX m</th><th>ΔY m</th><th>Corr. X</th><th>Corr. Y</th>
+    <th>X final</th><th>Y final</th><th>X brut</th><th>Y brut</th></tr></thead><tbody>`;
+  res.rows.forEach((r, i) => {
+    const pt = res.points[i];
+    const inc = i < res.incs.length ? res.incs[i] : null;
+    const c = i < res.corr.length ? res.corr[i] : null;
+    t += `<tr><td>${r.name}</td>`;
+    t += `<td>${r.angle == null ? '—' : f4(res.anglesCorr[i])}</td>`;
+    t += `<td>${i < res.gCorr.length ? f4(res.gCorr[i]) : '—'}</td>`;
+    t += `<td>${inc ? f3(inc.d) : '—'}</td>`;
+    t += `<td>${inc ? f3(inc.dx) : '—'}</td><td>${inc ? f3(inc.dy) : '—'}</td>`;
+    t += `<td>${c ? f3(c.cx) : '—'}</td><td>${c ? f3(c.cy) : '—'}</td>`;
+    t += `<td><b>${f3(pt.x)}</b></td><td><b>${f3(pt.y)}</b></td>`;
+    t += `<td>${f3(pt.x0)}</td><td>${f3(pt.y0)}</td></tr>`;
+  });
+  t += `</tbody></table>`;
+  const summary = summaryLines(res, mode);
+  t += summary;
+  renderResult(chTableOut, t, false);
+}
+
+function summaryLines(res, mode){
+  let s = `<p class="badge" style="margin-top:8px">Compensation : ${res.comp === 'bowditch' ? 'Bowditch' : 'Transit'} — Σd = ${f3(res.sumD)} m — contrôles : fx=${f3(res.fx)} fy=${f3(res.fy)} fa=${f3(res.fa)}</p>`;
+  if (mode === 'fermee' && res.fa > 0) s += `<p class="badge">Le cheminement se referme à ${f3(res.fa)} m près avant compensation.</p>`;
+  return s;
+}
+
+function exportTraverseCSV(){
+  if (!lastTraverse){ renderResult(chReport, 'Calculer d\'abord le cheminement.', true); return; }
+  const { res } = lastTraverse;
+  let csv = 'Station;Angle_corr;Gisement;Distance;DX;DY;CorrX;CorrY;X;Y\n';
+  res.rows.forEach((r, i) => {
+    const pt = res.points[i], inc = res.incs[i], c = res.corr[i];
+    csv += [r.name, r.angle == null ? '' : res.anglesCorr[i].toFixed(4), i < res.gCorr.length ? res.gCorr[i].toFixed(4) : '', inc ? inc.d.toFixed(3) : '', inc ? inc.dx.toFixed(3) : '', inc ? inc.dy.toFixed(3) : '', c ? c.cx.toFixed(3) : '', c ? c.cy.toFixed(3) : '', pt.x.toFixed(3), pt.y.toFixed(3)].join(';') + '\n';
+  });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cheminement.csv';
+  a.click();
+}
+
+function loadChExample(){
+  chMode.value = 'fermee';
+  onChMode();
+  chSens.value = 'd';
+  chComp.value = 'bowditch';
+  chAname.value = 'STA1'; chAx.value = '1000.000'; chAy.value = '1000.000';
+  chG0.value = UNIT === 'gon' ? '50.0000' : '45.0000';
+  chBody.innerHTML = '';
+  if (UNIT === 'gon'){
+    addChRow('STA1', '', '100');
+    addChRow('STA2', '300', '100');
+    addChRow('STA3', '300', '100');
+    addChRow('STA4', '300', '100');
+    addChRow('STA1', '300', '');
+  } else {
+    addChRow('STA1', '', '100');
+    addChRow('STA2', '270', '100');
+    addChRow('STA3', '270', '100');
+    addChRow('STA4', '270', '100');
+    addChRow('STA1', '270', '');
+  }
+}
+
+const nvBody = document.querySelector('#nvTable tbody');
+function addNvRow(name, ar, av){
+  const i = nvBody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${i}</td>
+    <td><input class="nvName" value="${name != null ? name : 'P' + i}"></td>
+    <td><input class="nvAr" type="number" step="0.001" value="${ar != null ? ar : ''}"></td>
+    <td><input class="nvAv" type="number" step="0.001" value="${av != null ? av : ''}"></td>
+    <td><button class="del" onclick="this.closest('tr').remove();renumber(nvBody)">&#10005;</button></td>`;
+  nvBody.appendChild(tr);
+}
+
+function calcLeveling(){
+  const rows = [...nvBody.rows].map(r => ({
+    name: r.querySelector('.nvName').value.trim(),
+    ar: r.querySelector('.nvAr').value === '' ? null : +r.querySelector('.nvAr').value,
+    av: r.querySelector('.nvAv').value === '' ? null : +r.querySelector('.nvAv').value
+  })).filter(r => r.ar != null || r.av != null);
+  if (rows.length === 0){ renderResult(nvReport, 'Saisir au moins une station de nivellement.', true); return; }
+  const res = levelingLoop(+nvH0.value, nvHf.value, rows);
+  let html = `<div class="summary">`;
+  html += `<div class="pill">Σ Δh brut = <b>${f3(res.rawFinal - +nvH0.value)}</b> m</div>`;
+  const isClosed = nvHf.value === '' ;
+  const tol = 5 * Math.sqrt(Math.max(res.n, 1)) / 1000;
+  const ok = Math.abs(res.closure) <= 0.001 || Math.abs(res.closure) <= tol;
+  html += `<div class="pill">${isClosed ? 'Boucle fermée (retour au départ)' : 'Rattachement'} : fermeture = <b class="${ok ? 'ok' : 'bad'}">${f3(res.closure)} m</b></div>`;
+  html += `<div class="pill">Correction par cheminement partiel = <b>${f3(res.corrPerStep)} m</b> sur ${res.n} partial(aux)</div>`;
+  if (isClosed) html += `<div class="pill">Altitude finale compensée = <b>${f3(res.compensatedFinal)} m</b> (attendue ${f3(+nvH0.value)} m)</div>`;
+  else html += `<div class="pill">Altitude finale = <b>${f3(res.compensatedFinal)} m</b> (connue ${f3(+nvHf.value)} m)</div>`;
+  html += `</div>`;
+  let t = `<div style="overflow-x:auto"><table><thead><tr><th>Point</th><th>AR</th><th>AV</th><th>Δh brut m</th><th>Δh compensé m</th><th>Altitude m</th><th>Altitude brute m</th></tr></thead><tbody>`;
+  res.heights.forEach((h, i) => {
+    const s = i === 0 ? null : res.steps[i - 1];
+    t += `<tr><td>${h.name}</td><td>${s ? (s.ar || '—') : '—'}</td><td>${s ? (s.av || '—') : '—'}</td>`;
+    t += `<td>${s ? f3(s.dh) : '—'}</td><td>${s ? f3(s.dhCorr) : '—'}</td>`;
+    t += `<td><b>${f3(h.h)}</b></td><td>${h.corr != null && s ? f3(h.h - h.corr) : f3(h.h)}</td></tr>`;
+  });
+  t += `</tbody></table></div>`;
+  renderResult(nvReport, html + t);
+}
+
+function loadNvExample(){
+  nvH0.value = '120.000';
+  nvHf.value = '';
+  nvBody.innerHTML = '';
+  addNvRow('BM1', '', '1.542');
+  addNvRow('A', '2.310', '0.875');
+  addNvRow('B', '1.900', '2.115');
+  addNvRow('BM1', '', '');
+  nvReport.hidden = false;
+}
+
+const surfBody = document.querySelector('#surfTable tbody');
+function addSurfRow(name, x, y){
+  const i = surfBody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${i}</td>
+    <td><input class="suName" value="${name != null ? name : 'P' + i}"></td>
+    <td><input class="suX" type="number" step="0.001" value="${x != null ? x : ''}"></td>
+    <td><input class="suY" type="number" step="0.001" value="${y != null ? y : ''}"></td>
+    <td><button class="del" onclick="this.closest('tr').remove();renumber(surfBody)">&#10005;</button></td>`;
+  surfBody.appendChild(tr);
+}
+
+function calcArea(){
+  const pts = [...surfBody.rows].map((r, i) => ({
+    name: r.querySelector('.suName').value.trim() || `P${i + 1}`,
+    x: +r.querySelector('.suX').value,
+    y: +r.querySelector('.suY').value
+  }));
+  if (pts.length < 3){ renderResult(surfReport, 'Au moins 3 sommets sont nécessaires.', true); return; }
+  const g = gaussArea(pts);
+  let html = `<div class="summary">
+    <div class="pill">Surface = <b>${n(g.area, 2)} m²</b> = <b>${n(g.area / 10000, 4)} ha</b> = <b>${n(g.area / 100, 2)} a</b></div>
+    <div class="pill">Périmètre = <b>${f3(g.perim)} m</b></div>`;
+  if (g.centroid) html += `<div class="pill">Centroïde : <b>${f3(g.centroid.x)}, ${f3(g.centroid.y)}</b></div>`;
+  html += `</div>`;
+  let t = `<div style="overflow-x:auto"><table><thead><tr><th>Sommet</th><th>X</th><th>Y</th><th>Côté vers suivant (m)</th></tr></thead><tbody>`;
+  pts.forEach((p, i) => {
+    const q = pts[(i + 1) % pts.length];
+    const d = Math.hypot(q.x - p.x, q.y - p.y);
+    t += `<tr><td>${p.name}</td><td>${f3(p.x)}</td><td>${f3(p.y)}</td><td>${f3(d)}</td></tr>`;
+  });
+  t += `</tbody></table></div>`;
+  renderResult(surfReport, html + t);
+}
+
+function loadSurfExample(){
+  surfBody.innerHTML = '';
+  addSurfRow('P1', '1000.000', '1000.000');
+  addSurfRow('P2', '1185.000', '980.000');
+  addSurfRow('P3', '1220.000', '1120.000');
+  addSurfRow('P4', '1050.000', '1180.000');
+  surfReport.hidden = false;
+}
+
+onChMode();
+addChRow('STA1', '', '');
+addChRow('STA2', '', '');
+addChRow('STA3', '', '');
+addChRow('STA4', '', '');
+addChRow('STA1', '', '');
+addNvRow('BM1', '', '');
+addSurfRow('P1', '', '');
+addSurfRow('P2', '', '');
+addSurfRow('P3', '', '');
+</script>
+
+<script>
+(function store(){
+  const key = 'topocalc-v1';
+  const persist = () => {
+    const data = {
+      unit: UNIT,
+      ch: {
+        mode: chMode.value, sens: chSens.value, comp: chComp.value,
+        a: [chAname.value, chAx.value, chAy.value, chG0.value],
+        b: [chBname.value, chBx.value, chBy.value, chGf.value],
+        rows: getChRows()
+      },
+      nv: { h0: nvH0.value, hf: nvHf.value,
+        rows: [...nvBody.rows].map(r => [r.querySelector('.nvName').value, r.querySelector('.nvAr').value, r.querySelector('.nvAv').value]) },
+      surf: [...surfBody.rows].map(r => [r.querySelector('.suName').value, r.querySelector('.suX').value, r.querySelector('.suY').value])
+    };
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch(e){}
+  };
+  document.addEventListener('input', ev => { if (ev.target.matches('input,select')) persist(); });
+  window.addEventListener('load', () => {
+    let d;
+    try { d = JSON.parse(localStorage.getItem(key)); } catch(e){}
+    if (!d) return;
+    setUnit(d.unit || 'gon');
+    document.getElementById('angleUnit').value = UNIT;
+    if (d.ch){
+      chMode.value = d.ch.mode; chSens.value = d.ch.sens; chComp.value = d.ch.comp;
+      [chAname.value, chAx.value, chAy.value, chG0.value] = d.ch.a;
+      [chBname.value, chBx.value, chBy.value, chGf.value] = d.ch.b;
+      chBody.innerHTML = '';
+      d.ch.rows.forEach(r => addChRow(r.name, r.angle, r.dist));
+    }
+    if (d.nv){
+      nvH0.value = d.nv.h0; nvHf.value = d.nv.hf;
+      nvBody.innerHTML = '';
+      d.nv.rows.forEach(r => addNvRow(r[0], r[1], r[2]));
+    }
+    if (d.surf && d.surf.length){
+      surfBody.innerHTML = '';
+      d.surf.forEach(r => addSurfRow(r[0], r[1], r[2]));
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
